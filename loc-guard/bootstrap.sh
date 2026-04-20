@@ -58,20 +58,16 @@ trap 'rm -f "$_GUM_TMP"' EXIT
 
 choose_one() {
     local prompt="$1"; shift
-    if [[ -n "$prompt" ]]; then
-        $GUM style --foreground 212 "$prompt" >/dev/tty
-        drain_tty
-    fi
+    [[ -n "$prompt" ]] && printf '\033[38;5;212m%s\033[0m\n' "$prompt" >/dev/tty
+    drain_tty
     $GUM choose "$@" >"$_GUM_TMP"
     cat "$_GUM_TMP"
 }
 
 choose_many() {
     local prompt="$1"; shift
-    if [[ -n "$prompt" ]]; then
-        $GUM style --foreground 212 "$prompt" >/dev/tty
-        drain_tty
-    fi
+    [[ -n "$prompt" ]] && printf '\033[38;5;212m%s\033[0m\n' "$prompt" >/dev/tty
+    drain_tty
     $GUM choose --no-limit "$@" >"$_GUM_TMP"
     cat "$_GUM_TMP"
 }
@@ -208,9 +204,8 @@ PREV_LOC=""
 
 for loc in "${LOCATIONS[@]}"; do
     echo ""
-    $GUM style --foreground 99 --bold --border normal --padding "0 1" --border-foreground 99 "Configure: $loc"
+    printf '\033[38;5;99m\033[1m┌─ Configure: %s ─┐\033[0m\n' "$loc"
     echo ""
-    drain_tty  # flush OSC background-color + cursor-position responses from border above
 
     if [[ -n "$PREV_LOC" ]]; then
         if $GUM confirm --default=no "Copy settings from '$PREV_LOC'?"; then
