@@ -131,7 +131,7 @@ else
     warn "No VPN profiles found — VPN switching will be disabled"
     echo ""
     $GUM style --faint "  Add a VPN in System Settings → VPN to enable this feature."
-    if confirm "Open System Settings → VPN now?" --default=no; then
+    if confirm "Open System Settings → VPN now?" n; then
         open "x-apple.systempreferences:com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension"
         echo ""
         info "Add a VPN profile, then press Enter to re-check."
@@ -414,10 +414,12 @@ if [[ "$HAS_VPN" == true ]]; then
     echo ""
     $GUM style --faint "  Path: $VPNHELPER_APP"
     echo ""
-    read -rp "$($GUM style --faint 'Press Enter to open System Settings...')"
+    $GUM style --faint "Press Enter to open System Settings..." >/dev/tty
+    read -r </dev/tty
     open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
     echo ""
-    read -rp "$($GUM style --faint 'Press Enter once VPNHelper.app is added to Login Items...')"
+    $GUM style --faint "Press Enter once VPNHelper.app is added to Login Items..." >/dev/tty
+    read -r </dev/tty
     ok "VPNHelper registered"
 fi
 
