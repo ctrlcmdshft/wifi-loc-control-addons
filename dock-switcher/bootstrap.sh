@@ -5,6 +5,9 @@ ADDON_DIR="$(cd "$(dirname "$0")" && pwd)"
 INSTALL_DIR="$HOME/.wifi-loc-control"
 USERNAME=$(whoami)
 DOCKFLOW="/Applications/DockFlow.app/Contents/MacOS/DockFlowCLI"
+DRY_RUN=false
+
+[[ "$1" == "--dry-run" ]] && DRY_RUN=true
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 BOLD='\033[1m'
@@ -13,13 +16,15 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+CYAN='\033[0;36m'
 RESET='\033[0m'
 
-ok()   { echo -e "${GREEN}✓${RESET} $*"; }
-warn() { echo -e "${YELLOW}⚠${RESET} $*"; }
-err()  { echo -e "${RED}✗${RESET} $*"; }
-info() { echo -e "${BLUE}→${RESET} $*"; }
-hr()   { echo -e "${DIM}────────────────────────────────────────${RESET}"; }
+ok()      { echo -e "${GREEN}✓${RESET} $*"; }
+warn()    { echo -e "${YELLOW}⚠${RESET} $*"; }
+err()     { echo -e "${RED}✗${RESET} $*"; }
+info()    { echo -e "${BLUE}→${RESET} $*"; }
+dryrun()  { echo -e "${CYAN}[dry-run]${RESET} $*"; }
+hr()      { echo -e "${DIM}────────────────────────────────────────${RESET}"; }
 
 ask() {
     local prompt="$1" default="$2" reply
@@ -52,9 +57,10 @@ echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
 echo -e "${BOLD}║       Dock Switcher — Interactive Setup  ║${RESET}"
 echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
+$DRY_RUN && echo -e "  ${CYAN}${BOLD}DRY RUN — no files will be written${RESET}"
 echo ""
 
-# ── Check wifi-loc-control ────────────────────────────────────────────────────
+# ── Check requirements ────────────────────────────────────────────────────────
 hr
 echo -e "${BOLD}Checking requirements...${RESET}"
 hr
@@ -69,9 +75,13 @@ ok "wifi-loc-control"
 if command -v terminal-notifier &>/dev/null; then
     ok "terminal-notifier"
 else
-    warn "terminal-notifier not found — installing via Homebrew..."
-    brew install terminal-notifier
-    ok "terminal-notifier installed"
+    if $DRY_RUN; then
+        warn "terminal-notifier not found — would install via Homebrew"
+    else
+        warn "terminal-notifier not found — installing via Homebrew..."
+        brew install terminal-notifier
+        ok "terminal-notifier installed"
+    fi
 fi
 
 HAS_DOCKFLOW=false
@@ -83,15 +93,15 @@ else
     info "Install DockFlow: https://dockflow.app"
 fi
 
-HAS_WIREGUARD=false
-WG_TUNNELS=()
+HAS_VPN=false
+VPN_TUNNELS=()
 while IFS= read -r line; do
     tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
-    [[ -n "$tunnel" ]] && WG_TUNNELS+=("$tunnel")
+    [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
 done < <(scutil --nc list 2>/dev/null | grep "VPN")
-if [[ ${#WG_TUNNELS[@]} -gt 0 ]]; then
-    ok "VPN profiles found: ${WG_TUNNELS[*]}"
-    HAS_WIREGUARD=true
+if [[ ${#VPN_TUNNELS[@]} -gt 0 ]]; then
+    ok "VPN profiles found: ${VPN_TUNNELS[*]}"
+    HAS_VPN=true
 else
     warn "No VPN profiles found — VPN switching will be disabled"
     info "Add a VPN in System Settings → VPN to enable this feature"
@@ -121,16 +131,16 @@ echo ""
 
 # ── Per-location configuration ────────────────────────────────────────────────
 declare -A LOC_DOCKFLOW LOC_PRESET LOC_FIREWALL LOC_STEALTH LOC_AIRDROP \
-            LOC_WIREGUARD LOC_TUNNEL LOC_KILLAPPS LOC_NOTIFY
+            LOC_VPN LOC_KILLAPPS LOC_NOTIFY
 
 SELECTED_TUNNEL=""
-if [[ "$HAS_WIREGUARD" == true && ${#WG_TUNNELS[@]} -gt 0 ]]; then
+if [[ "$HAS_VPN" == true && ${#VPN_TUNNELS[@]} -gt 0 ]]; then
     echo ""
-    if [[ ${#WG_TUNNELS[@]} -eq 1 ]]; then
-        SELECTED_TUNNEL="${WG_TUNNELS[0]}"
-        ok "Using WireGuard tunnel: ${BOLD}$SELECTED_TUNNEL${RESET}"
+    if [[ ${#VPN_TUNNELS[@]} -eq 1 ]]; then
+        SELECTED_TUNNEL="${VPN_TUNNELS[0]}"
+        ok "Using VPN tunnel: ${BOLD}$SELECTED_TUNNEL${RESET}"
     else
-        pick "Which WireGuard tunnel should be used?" "${WG_TUNNELS[@]}"
+        pick "Which VPN tunnel should be used?" "${VPN_TUNNELS[@]}"
         SELECTED_TUNNEL="$PICK_RESULT"
     fi
 fi
@@ -141,7 +151,6 @@ for loc in "${LOCATIONS[@]}"; do
     echo -e "${BOLD}Configure: $loc${RESET}"
     hr
 
-    # DockFlow
     if [[ "$HAS_DOCKFLOW" == true ]]; then
         if ask "Enable dock switching?" "y"; then
             LOC_DOCKFLOW[$loc]="on"
@@ -156,7 +165,6 @@ for loc in "${LOCATIONS[@]}"; do
         LOC_PRESET[$loc]=""
     fi
 
-    # Firewall
     default_fw="n"; [[ "$loc" != "Home" ]] && default_fw="y"
     if ask "Enable firewall?" "$default_fw"; then
         LOC_FIREWALL[$loc]="on"
@@ -164,7 +172,6 @@ for loc in "${LOCATIONS[@]}"; do
         LOC_FIREWALL[$loc]="off"
     fi
 
-    # Stealth mode
     default_st="n"; [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && default_st="y"
     if ask "Enable stealth mode?" "$default_st"; then
         LOC_STEALTH[$loc]="on"
@@ -172,7 +179,6 @@ for loc in "${LOCATIONS[@]}"; do
         LOC_STEALTH[$loc]="off"
     fi
 
-    # AirDrop
     default_ad="y"; [[ "$loc" != "Home" ]] && default_ad="n"
     if ask "Enable AirDrop?" "$default_ad"; then
         LOC_AIRDROP[$loc]="on"
@@ -180,24 +186,21 @@ for loc in "${LOCATIONS[@]}"; do
         LOC_AIRDROP[$loc]="off"
     fi
 
-    # WireGuard VPN
-    if [[ "$HAS_WIREGUARD" == true && -n "$SELECTED_TUNNEL" ]]; then
-        default_wg="n"; [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && default_wg="y"
-        if ask "Enable VPN ($SELECTED_TUNNEL)?" "$default_wg"; then
-            LOC_WIREGUARD[$loc]="on"
+    if [[ "$HAS_VPN" == true && -n "$SELECTED_TUNNEL" ]]; then
+        default_vpn="n"; [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && default_vpn="y"
+        if ask "Enable VPN ($SELECTED_TUNNEL)?" "$default_vpn"; then
+            LOC_VPN[$loc]="on"
         else
-            LOC_WIREGUARD[$loc]="off"
+            LOC_VPN[$loc]="off"
         fi
     else
-        LOC_WIREGUARD[$loc]="off"
+        LOC_VPN[$loc]="off"
     fi
 
-    # Kill apps
     echo -ne "${BOLD}Apps to quit on switch?${RESET} ${DIM}(comma-separated, or leave blank)${RESET} "
     read -r killapps
     LOC_KILLAPPS[$loc]="$killapps"
 
-    # Notifications
     if ask "Show notification on switch?" "y"; then
         LOC_NOTIFY[$loc]="on"
     else
@@ -210,18 +213,54 @@ echo ""
 hr
 echo -e "${BOLD}Review your configuration:${RESET}"
 hr
-printf "%-14s %-10s %-10s %-10s %-10s %-10s %-6s\n" "Location" "Dock" "Firewall" "Stealth" "AirDrop" "VPN" "Notify"
-printf "%-14s %-10s %-10s %-10s %-10s %-10s %-6s\n" "--------" "----" "--------" "-------" "-------" "---" "------"
+printf "%-14s %-12s %-10s %-10s %-10s %-6s %-6s\n" "Location" "Dock" "Firewall" "Stealth" "AirDrop" "VPN" "Notify"
+printf "%-14s %-12s %-10s %-10s %-10s %-6s %-6s\n" "--------" "----" "--------" "-------" "-------" "---" "------"
 for loc in "${LOCATIONS[@]}"; do
     dock_info="${LOC_DOCKFLOW[$loc]}"
     [[ "${LOC_DOCKFLOW[$loc]}" == "on" ]] && dock_info="${LOC_PRESET[$loc]}"
-    printf "%-14s %-10s %-10s %-10s %-10s %-10s %-6s\n" \
+    printf "%-14s %-12s %-10s %-10s %-10s %-6s %-6s\n" \
         "$loc" "$dock_info" "${LOC_FIREWALL[$loc]}" "${LOC_STEALTH[$loc]}" \
-        "${LOC_AIRDROP[$loc]}" "${LOC_WIREGUARD[$loc]}" "${LOC_NOTIFY[$loc]}"
+        "${LOC_AIRDROP[$loc]}" "${LOC_VPN[$loc]}" "${LOC_NOTIFY[$loc]}"
 done
 echo ""
 
-if ! ask "Looks good? Proceed with installation?" "y"; then
+# ── Dry run: show generated files and exit ────────────────────────────────────
+if $DRY_RUN; then
+    hr
+    echo -e "${CYAN}${BOLD}[dry-run] settings.conf preview:${RESET}"
+    hr
+    echo ""
+
+    [[ -n "$SELECTED_TUNNEL" ]] && echo "WIREGUARD_TUNNEL=\"$SELECTED_TUNNEL\""
+    echo ""
+    for loc in "${LOCATIONS[@]}"; do
+        KEY=$(echo "$loc" | tr '[:lower:]' '[:upper:]' | tr ' ' '_')
+        echo "# $loc"
+        echo "${KEY}_dockflow=${LOC_DOCKFLOW[$loc]}"
+        [[ "${LOC_DOCKFLOW[$loc]}" == "on" ]] && echo "${KEY}_dockflow_preset=\"${LOC_PRESET[$loc]}\""
+        echo "${KEY}_firewall=${LOC_FIREWALL[$loc]}"
+        echo "${KEY}_stealth_mode=${LOC_STEALTH[$loc]}"
+        echo "${KEY}_airdrop=${LOC_AIRDROP[$loc]}"
+        echo "${KEY}_wireguard=${LOC_VPN[$loc]}"
+        echo "${KEY}_kill_apps=\"${LOC_KILLAPPS[$loc]}\""
+        echo "${KEY}_notification=${LOC_NOTIFY[$loc]}"
+        echo ""
+    done
+
+    hr
+    echo -e "${CYAN}${BOLD}[dry-run] Location scripts that would be created:${RESET}"
+    hr
+    for loc in "${LOCATIONS[@]}"; do
+        dryrun "$INSTALL_DIR/$loc"
+    done
+    dryrun "$INSTALL_DIR/apply.sh"
+    dryrun "VPNHelper.app (built from source)"
+    echo ""
+    echo -e "${CYAN}Run without --dry-run to apply.${RESET}"
+    exit 0
+fi
+
+if ! ask "Proceed with installation?" "y"; then
     echo "Aborted."
     exit 0
 fi
@@ -229,7 +268,6 @@ fi
 # ── Generate settings.conf ────────────────────────────────────────────────────
 echo ""
 info "Generating settings.conf..."
-
 CONF_FILE="$INSTALL_DIR/settings.conf"
 mkdir -p "$INSTALL_DIR"
 
@@ -239,7 +277,7 @@ echo "# Edit this file to adjust toggles. Changes take effect on next location s
 echo ""
 
 if [[ -n "$SELECTED_TUNNEL" ]]; then
-    echo "# ── WireGuard Tunnel (change here if you switch servers) ─────────────────────"
+    echo "# ── VPN Tunnel (change here if you switch servers) ──────────────────────────"
     echo "WIREGUARD_TUNNEL=\"$SELECTED_TUNNEL\""
     echo ""
 fi
@@ -252,18 +290,16 @@ for loc in "${LOCATIONS[@]}"; do
     echo "${KEY}_firewall=${LOC_FIREWALL[$loc]}"
     echo "${KEY}_stealth_mode=${LOC_STEALTH[$loc]}"
     echo "${KEY}_airdrop=${LOC_AIRDROP[$loc]}"
-    echo "${KEY}_wireguard=${LOC_WIREGUARD[$loc]}"
+    echo "${KEY}_wireguard=${LOC_VPN[$loc]}"
     echo "${KEY}_kill_apps=\"${LOC_KILLAPPS[$loc]}\""
     echo "${KEY}_notification=${LOC_NOTIFY[$loc]}"
     echo ""
 done
 } > "$CONF_FILE"
-
-ok "settings.conf written to $CONF_FILE"
+ok "settings.conf → $CONF_FILE"
 
 # ── Install scripts ───────────────────────────────────────────────────────────
 info "Installing scripts..."
-
 cp "$ADDON_DIR/scripts/apply.sh" "$INSTALL_DIR/apply.sh"
 chmod +x "$INSTALL_DIR/apply.sh"
 ok "apply.sh"
@@ -282,7 +318,6 @@ done
 # ── Sudoers ───────────────────────────────────────────────────────────────────
 SUDOERS_FILE="/etc/sudoers.d/wifi-loc-control"
 SUDOERS_LINE="$USERNAME ALL=(ALL) NOPASSWD: /usr/libexec/ApplicationFirewall/socketfilterfw"
-
 if sudo grep -q "socketfilterfw" "$SUDOERS_FILE" 2>/dev/null; then
     ok "Firewall sudoers rule already set"
 else
@@ -293,7 +328,7 @@ else
 fi
 
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
-if [[ "$HAS_WIREGUARD" == true && -n "$SELECTED_TUNNEL" ]]; then
+if [[ "$HAS_VPN" == true && -n "$SELECTED_TUNNEL" ]]; then
     echo ""
     info "Building VPNHelper.app..."
     bash "$ADDON_DIR/VPNHelper/build.sh"
@@ -306,7 +341,7 @@ echo -e "${GREEN}${BOLD}║           Setup complete!                ║${RESET}
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════╝${RESET}"
 echo ""
 
-if [[ "$HAS_WIREGUARD" == true && -n "$SELECTED_TUNNEL" ]]; then
+if [[ "$HAS_VPN" == true && -n "$SELECTED_TUNNEL" ]]; then
     echo -e "${BOLD}Action required:${RESET}"
     echo "  Add VPNHelper.app to Login Items so VPN switching works at login:"
     echo -e "  ${BLUE}System Settings → General → Login Items & Extensions → +${RESET}"
