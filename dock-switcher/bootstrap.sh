@@ -45,7 +45,8 @@ pick() {
     while true; do
         echo -ne "${DIM}Enter number (1-${#options[@]}):${RESET} "
         read -r choice
-        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#options[@]} )); then
+        choice="${choice//[^0-9]/}"
+        if [[ -n "$choice" ]] && (( choice >= 1 && choice <= ${#options[@]} )); then
             PICK_RESULT="${options[$((choice-1))]}"
             return
         fi
