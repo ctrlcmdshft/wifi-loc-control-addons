@@ -317,7 +317,8 @@ for loc in "${LOCATIONS[@]}"; do
 
     # Kill apps
     echo ""
-    KILLAPPS=$($GUM input --placeholder "Apps to quit on switch (comma-separated, or leave blank)" --prompt "  Kill apps: ")
+    $GUM style --foreground 212 "  Kill apps on switch for $loc (comma-separated, or leave blank):" >/dev/tty
+    KILLAPPS=$($GUM input --placeholder "Dropbox,OneDrive,Slack")
     LOC_KILLAPPS[$loc]="$KILLAPPS"
 done
 
