@@ -173,51 +173,63 @@ for loc in "${LOCATIONS[@]}"; do
     fi
 done
 
-# ── Signing option ────────────────────────────────────────────────────────────
-section "VPNHelper Signing"
-$GUM style --faint "VPNHelper.app is built locally from source. Choose a signing method:"
-echo ""
-
-SIGN_CHOICE=$(choose_one "How should VPNHelper.app be signed?" \
-    "Local build — no extra signing (recommended, Gatekeeper skipped for local builds)" \
-    "Ad-hoc — code integrity only (safe, no developer account needed)" \
-    "Apple Development — free Apple account, no Gatekeeper on your Mac" \
-    "Developer ID — paid \$99/yr, distributable to any Mac")
-
+# ── VPNHelper install state ───────────────────────────────────────────────────
+VPNHELPER_APP="$ADDON_DIR/VPNHelper/VPNHelper.app"
+VPNHELPER_INSTALLED=false
 SIGN_MODE="adhoc"
 SIGN_IDENTITY="-"
-case "$SIGN_CHOICE" in
-    "Local build"*)
-        SIGN_MODE="local"
-        SIGN_IDENTITY="-"
-        ok "Using local build (ad-hoc, no quarantine)" ;;
-    "Ad-hoc"*)
-        SIGN_MODE="adhoc"
-        SIGN_IDENTITY="-"
-        ok "Using ad-hoc signing" ;;
-    "Apple Development"*)
-        SIGN_MODE="dev"
-        SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | grep -o '"[^"]*"' | head -1 | tr -d '"')
-        if [[ -z "$SIGN_IDENTITY" ]]; then
-            warn "No Apple Development certificate found"
-            info "Sign in to Xcode with your Apple ID to create one, then re-run"
-            if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
+
+if [[ "$HAS_VPN" == true ]] && \
+   [[ -f "$VPNHELPER_APP/Contents/MacOS/VPNHelper" ]] && \
+   pgrep -x VPNHelper &>/dev/null; then
+    VPNHELPER_INSTALLED=true
+fi
+
+# ── Signing option (skipped if VPNHelper already installed) ───────────────────
+if [[ "$VPNHELPER_INSTALLED" == false && "$HAS_VPN" == true ]]; then
+    section "VPNHelper Signing"
+    $GUM style --faint "VPNHelper.app is built locally from source. Choose a signing method:"
+    echo ""
+
+    SIGN_CHOICE=$(choose_one "How should VPNHelper.app be signed?" \
+        "Local build — no extra signing (recommended, Gatekeeper skipped for local builds)" \
+        "Ad-hoc — code integrity only (safe, no developer account needed)" \
+        "Apple Development — free Apple account, no Gatekeeper on your Mac" \
+        "Developer ID — paid \$99/yr, distributable to any Mac")
+
+    case "$SIGN_CHOICE" in
+        "Local build"*)
+            SIGN_MODE="local"
             SIGN_IDENTITY="-"
-        else
-            ok "Signing with: $SIGN_IDENTITY"
-        fi ;;
-    "Developer ID"*)
-        SIGN_MODE="developerid"
-        SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | grep -o '"[^"]*"' | head -1 | tr -d '"')
-        if [[ -z "$SIGN_IDENTITY" ]]; then
-            warn "No Developer ID certificate found"
-            info "Enroll at developer.apple.com ($99/yr) and create a Developer ID certificate"
-            if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
+            ok "Using local build (ad-hoc, no quarantine)" ;;
+        "Ad-hoc"*)
+            SIGN_MODE="adhoc"
             SIGN_IDENTITY="-"
-        else
-            ok "Signing with: $SIGN_IDENTITY"
-        fi ;;
-esac
+            ok "Using ad-hoc signing" ;;
+        "Apple Development"*)
+            SIGN_MODE="dev"
+            SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+            if [[ -z "$SIGN_IDENTITY" ]]; then
+                warn "No Apple Development certificate found"
+                info "Sign in to Xcode with your Apple ID to create one, then re-run"
+                if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
+                SIGN_IDENTITY="-"
+            else
+                ok "Signing with: $SIGN_IDENTITY"
+            fi ;;
+        "Developer ID"*)
+            SIGN_MODE="developerid"
+            SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+            if [[ -z "$SIGN_IDENTITY" ]]; then
+                warn "No Developer ID certificate found"
+                info "Enroll at developer.apple.com ($99/yr) and create a Developer ID certificate"
+                if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
+                SIGN_IDENTITY="-"
+            else
+                ok "Signing with: $SIGN_IDENTITY"
+            fi ;;
+    esac
+fi
 
 # ── Per-location configuration ────────────────────────────────────────────────
 declare -A LOC_FIREWALL LOC_STEALTH LOC_AIRDROP LOC_VPN LOC_TUNNEL LOC_KILLAPPS LOC_NOTIFY
@@ -373,37 +385,40 @@ else
 fi
 
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
-VPNHELPER_APP="$ADDON_DIR/VPNHelper/VPNHelper.app"
 if [[ "$HAS_VPN" == true ]]; then
-    echo ""
-    $GUM spin --spinner dot --title "Building VPNHelper.app..." -- bash -c "
-        mkdir -p '$VPNHELPER_APP/Contents/MacOS' '$VPNHELPER_APP/Contents/Resources'
-        cp '$ADDON_DIR/VPNHelper/Info.plist' '$VPNHELPER_APP/Contents/Info.plist'
-        swiftc '$ADDON_DIR/VPNHelper/main.swift' -o '$VPNHELPER_APP/Contents/MacOS/VPNHelper' -framework Cocoa
-        codesign --force --deep --sign '$SIGN_IDENTITY' '$VPNHELPER_APP'
-    "
-    ok "VPNHelper.app built (signed: ${SIGN_IDENTITY:0:30}...)"
-    echo ""
-    $GUM style --foreground 214 --bold "One manual step required:"
-    $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
-    echo ""
-    $GUM style --faint "  Path: $VPNHELPER_APP"
-    echo ""
-    $GUM style --faint "Press Enter to open System Settings..." >/dev/tty
-    stty -echo </dev/tty 2>/dev/null
-    sleep 0.15
-    while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
-    stty echo </dev/tty 2>/dev/null
-    read -r </dev/tty
-    open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
-    echo ""
-    $GUM style --faint "Press Enter once VPNHelper.app is added to Login Items..." >/dev/tty
-    stty -echo </dev/tty 2>/dev/null
-    sleep 0.15
-    while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
-    stty echo </dev/tty 2>/dev/null
-    read -r </dev/tty
-    ok "VPNHelper registered"
+    if [[ "$VPNHELPER_INSTALLED" == true ]]; then
+        ok "VPNHelper.app already installed — skipping rebuild"
+    else
+        echo ""
+        $GUM spin --spinner dot --title "Building VPNHelper.app..." -- bash -c "
+            mkdir -p '$VPNHELPER_APP/Contents/MacOS' '$VPNHELPER_APP/Contents/Resources'
+            cp '$ADDON_DIR/VPNHelper/Info.plist' '$VPNHELPER_APP/Contents/Info.plist'
+            swiftc '$ADDON_DIR/VPNHelper/main.swift' -o '$VPNHELPER_APP/Contents/MacOS/VPNHelper' -framework Cocoa
+            codesign --force --deep --sign '$SIGN_IDENTITY' '$VPNHELPER_APP'
+        "
+        ok "VPNHelper.app built (signed: ${SIGN_IDENTITY:0:30}...)"
+        echo ""
+        $GUM style --foreground 214 --bold "One manual step required:"
+        $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
+        echo ""
+        $GUM style --faint "  Path: $VPNHELPER_APP"
+        echo ""
+        $GUM style --faint "Press Enter to open System Settings..." >/dev/tty
+        stty -echo </dev/tty 2>/dev/null
+        sleep 0.15
+        while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
+        stty echo </dev/tty 2>/dev/null
+        read -r </dev/tty
+        open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
+        echo ""
+        $GUM style --faint "Press Enter once VPNHelper.app is added to Login Items..." >/dev/tty
+        stty -echo </dev/tty 2>/dev/null
+        sleep 0.15
+        while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
+        stty echo </dev/tty 2>/dev/null
+        read -r </dev/tty
+        ok "VPNHelper registered"
+    fi
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
