@@ -176,57 +176,9 @@ done
 # ── VPNHelper install state ───────────────────────────────────────────────────
 VPNHELPER_APP="$ADDON_DIR/VPNHelper/VPNHelper.app"
 VPNHELPER_INSTALLED=false
-SIGN_MODE="adhoc"
-SIGN_IDENTITY="-"
 
 if [[ "$HAS_VPN" == true ]] && [[ -f "$VPNHELPER_APP/Contents/MacOS/VPNHelper" ]]; then
     VPNHELPER_INSTALLED=true
-fi
-
-# ── Signing option (skipped if VPNHelper already installed) ───────────────────
-if [[ "$VPNHELPER_INSTALLED" == false && "$HAS_VPN" == true ]]; then
-    section "VPNHelper Signing"
-    $GUM style --faint "VPNHelper.app is built locally from source. Choose a signing method:"
-    echo ""
-
-    SIGN_CHOICE=$(choose_one "How should VPNHelper.app be signed?" \
-        "Local build — no extra signing (recommended, Gatekeeper skipped for local builds)" \
-        "Ad-hoc — code integrity only (safe, no developer account needed)" \
-        "Apple Development — free Apple account, no Gatekeeper on your Mac" \
-        "Developer ID — paid \$99/yr, distributable to any Mac")
-
-    case "$SIGN_CHOICE" in
-        "Local build"*)
-            SIGN_MODE="local"
-            SIGN_IDENTITY="-"
-            ok "Using local build (ad-hoc, no quarantine)" ;;
-        "Ad-hoc"*)
-            SIGN_MODE="adhoc"
-            SIGN_IDENTITY="-"
-            ok "Using ad-hoc signing" ;;
-        "Apple Development"*)
-            SIGN_MODE="dev"
-            SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | grep -o '"[^"]*"' | head -1 | tr -d '"')
-            if [[ -z "$SIGN_IDENTITY" ]]; then
-                warn "No Apple Development certificate found"
-                info "Sign in to Xcode with your Apple ID to create one, then re-run"
-                if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
-                SIGN_IDENTITY="-"
-            else
-                ok "Signing with: $SIGN_IDENTITY"
-            fi ;;
-        "Developer ID"*)
-            SIGN_MODE="developerid"
-            SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | grep -o '"[^"]*"' | head -1 | tr -d '"')
-            if [[ -z "$SIGN_IDENTITY" ]]; then
-                warn "No Developer ID certificate found"
-                info "Enroll at developer.apple.com ($99/yr) and create a Developer ID certificate"
-                if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
-                SIGN_IDENTITY="-"
-            else
-                ok "Signing with: $SIGN_IDENTITY"
-            fi ;;
-    esac
 fi
 
 # ── Per-location configuration ────────────────────────────────────────────────
@@ -239,10 +191,25 @@ $GUM style --faint "Select features to enable for each location"
 FEATURE_LIST=("Firewall" "Stealth mode" "AirDrop" "Notifications")
 [[ "$HAS_VPN" == true ]] && FEATURE_LIST+=("VPN")
 
+PREV_LOC=""
+
 for loc in "${LOCATIONS[@]}"; do
     echo ""
     $GUM style --foreground 99 --bold --border normal --padding "0 1" --border-foreground 99 "Configure: $loc"
     echo ""
+
+    if [[ -n "$PREV_LOC" ]] && $GUM confirm --default=no "Copy settings from '$PREV_LOC'?"; then
+        LOC_FIREWALL[$loc]="${LOC_FIREWALL[$PREV_LOC]}"
+        LOC_STEALTH[$loc]="${LOC_STEALTH[$PREV_LOC]}"
+        LOC_AIRDROP[$loc]="${LOC_AIRDROP[$PREV_LOC]}"
+        LOC_VPN[$loc]="${LOC_VPN[$PREV_LOC]}"
+        LOC_TUNNEL[$loc]="${LOC_TUNNEL[$PREV_LOC]}"
+        LOC_KILLAPPS[$loc]="${LOC_KILLAPPS[$PREV_LOC]}"
+        LOC_NOTIFY[$loc]="${LOC_NOTIFY[$PREV_LOC]}"
+        ok "Copied from $PREV_LOC"
+        PREV_LOC="$loc"
+        continue
+    fi
 
     # Smart defaults: current/active location = home-like, others = away-like
     DEFAULTS=()
@@ -287,15 +254,19 @@ for loc in "${LOCATIONS[@]}"; do
         LOC_TUNNEL[$loc]=$(choose_one "Select VPN tunnel for $loc:" "${VPN_TUNNELS[@]}")
     fi
 
-    # Kill apps — drain gum's leftover terminal query bytes before prompting
+    # Kill apps
     echo ""
     stty -echo </dev/tty 2>/dev/null
     sleep 0.15
     while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
     stty echo </dev/tty 2>/dev/null
-    $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
-    IFS= read -r KILLAPPS </dev/tty
+    KILLAPPS=$($GUM input \
+        --prompt "  Apps to quit on switch: " \
+        --placeholder "Zoom, Slack (comma-separated, or leave blank)" \
+        --value "${LOC_KILLAPPS[$loc]:-}")
     LOC_KILLAPPS[$loc]="$KILLAPPS"
+
+    PREV_LOC="$loc"
 done
 
 # ── Review ────────────────────────────────────────────────────────────────────
@@ -426,9 +397,9 @@ if [[ "$HAS_VPN" == true ]]; then
             mkdir -p '$VPNHELPER_APP/Contents/MacOS' '$VPNHELPER_APP/Contents/Resources'
             cp '$ADDON_DIR/VPNHelper/Info.plist' '$VPNHELPER_APP/Contents/Info.plist'
             swiftc '$ADDON_DIR/VPNHelper/main.swift' -o '$VPNHELPER_APP/Contents/MacOS/VPNHelper' -framework Cocoa
-            codesign --force --deep --sign '$SIGN_IDENTITY' '$VPNHELPER_APP'
+            codesign --force --deep --sign - '$VPNHELPER_APP'
         "
-        ok "VPNHelper.app built (signed: ${SIGN_IDENTITY:0:30}...)"
+        ok "VPNHelper.app built (ad-hoc signed)"
         echo ""
         $GUM style --foreground 214 --bold "One manual step required:"
         $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
