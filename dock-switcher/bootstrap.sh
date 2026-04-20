@@ -9,65 +9,66 @@ DRY_RUN=false
 
 [[ "$1" == "--dry-run" ]] && DRY_RUN=true
 
-# ── Colors ────────────────────────────────────────────────────────────────────
-BOLD='\033[1m'
-DIM='\033[2m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-RESET='\033[0m'
+# ── Install gum if needed ─────────────────────────────────────────────────────
+if ! command -v gum &>/dev/null; then
+    echo "Installing gum (required for interactive setup)..."
+    brew install gum
+fi
 
-ok()      { echo -e "${GREEN}✓${RESET} $*"; }
-warn()    { echo -e "${YELLOW}⚠${RESET} $*"; }
-err()     { echo -e "${RED}✗${RESET} $*"; }
-info()    { echo -e "${BLUE}→${RESET} $*"; }
-dryrun()  { echo -e "${CYAN}[dry-run]${RESET} $*"; }
-hr()      { echo -e "${DIM}────────────────────────────────────────${RESET}"; }
+GUM=$(which gum)
 
-ask() {
-    local prompt="$1" default="$2" reply
-    local hint="[Y/n]"; [[ "$default" == "n" ]] && hint="[y/N]"
-    echo -ne "${BOLD}$prompt${RESET} ${DIM}$hint${RESET} "
-    read -r reply
-    reply="${reply:-$default}"
-    [[ "$reply" =~ ^[Yy] ]]
+# ── Helpers ───────────────────────────────────────────────────────────────────
+header() {
+    echo ""
+    $GUM style \
+        --border rounded \
+        --border-foreground 99 \
+        --padding "0 2" \
+        --bold \
+        --foreground 99 \
+        "$1"
+    echo ""
 }
 
-pick() {
+section() {
+    echo ""
+    $GUM style --foreground 212 --bold "── $1"
+}
+
+ok()   { $GUM style --foreground 2   "✓ $*"; }
+warn() { $GUM style --foreground 214 "⚠ $*"; }
+err()  { $GUM style --foreground 1   "✗ $*"; }
+info() { $GUM style --foreground 12  "→ $*"; }
+
+confirm() {
+    local prompt="$1" default="${2:-y}"
+    local flag="--default=yes"
+    [[ "$default" == "n" ]] && flag="--default=no"
+    $GUM confirm $flag "$prompt"
+}
+
+choose_one() {
     local prompt="$1"; shift
-    local options=("$@")
-    echo -e "${BOLD}$prompt${RESET}"
-    for i in "${!options[@]}"; do
-        echo -e "  ${DIM}$((i+1)))${RESET} ${options[$i]}"
-    done
-    while true; do
-        echo -ne "${DIM}Choose (1–${#options[@]}):${RESET} "
-        read -r choice
-        choice="${choice//[^0-9]/}"
-        if [[ -n "$choice" ]] && (( choice >= 1 && choice <= ${#options[@]} )); then
-            PICK_RESULT="${options[$((choice-1))]}"
-            return
-        fi
-        warn "Invalid choice, try again."
-    done
+    $GUM style --foreground 212 "$prompt"
+    $GUM choose "$@"
 }
 
-echo ""
-echo -e "${BOLD}╔══════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}║       Dock Switcher — Interactive Setup  ║${RESET}"
-echo -e "${BOLD}╚══════════════════════════════════════════╝${RESET}"
-$DRY_RUN && echo -e "  ${CYAN}${BOLD}DRY RUN — no files will be written${RESET}"
-echo ""
+choose_many() {
+    local prompt="$1"; shift
+    $GUM style --foreground 212 "$prompt"
+    $GUM choose --no-limit "$@"
+}
 
-# ── Check requirements ────────────────────────────────────────────────────────
-hr
-echo -e "${BOLD}Checking requirements...${RESET}"
-hr
+# ── Header ────────────────────────────────────────────────────────────────────
+clear
+header "Dock Switcher — Interactive Setup"
+$DRY_RUN && $GUM style --foreground 214 --bold "  DRY RUN — no files will be written"
+
+# ── Requirements ──────────────────────────────────────────────────────────────
+section "Checking requirements"
 
 if [[ ! -f /usr/local/bin/wifi-loc-control.sh ]]; then
-    err "wifi-loc-control is not installed."
+    err "wifi-loc-control is not installed"
     info "Install it first: https://github.com/vborodulin/wifi-loc-control"
     exit 1
 fi
@@ -79,7 +80,7 @@ else
     if $DRY_RUN; then
         warn "terminal-notifier not found — would install via Homebrew"
     else
-        warn "terminal-notifier not found — installing via Homebrew..."
+        warn "terminal-notifier not found — installing..."
         brew install terminal-notifier
         ok "terminal-notifier installed"
     fi
@@ -92,8 +93,9 @@ if [[ -x "$DOCKFLOW" ]]; then
 else
     warn "DockFlow not found — dock switching will be disabled"
     info "Install DockFlow: https://dockflow.app then re-run this script"
-    if ! ask "Continue without DockFlow?" "y"; then
-        echo "Install DockFlow from https://dockflow.app and run bootstrap.sh again."
+    if ! confirm "Continue without DockFlow?"; then
+        echo ""
+        info "Install DockFlow from https://dockflow.app and run bootstrap.sh again."
         exit 0
     fi
 fi
@@ -105,7 +107,7 @@ while IFS= read -r line; do
     [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
 done < <(scutil --nc list 2>/dev/null | grep "VPN")
 if [[ ${#VPN_TUNNELS[@]} -gt 0 ]]; then
-    ok "VPN profiles found: ${VPN_TUNNELS[*]}"
+    ok "VPN profiles: ${VPN_TUNNELS[*]}"
     HAS_VPN=true
 else
     warn "No VPN profiles found — VPN switching will be disabled"
@@ -129,43 +131,74 @@ if [[ "$HAS_DOCKFLOW" == true ]]; then
 fi
 
 echo ""
-hr
-echo -e "${BOLD}Found ${#LOCATIONS[@]} network location(s): ${LOCATIONS[*]}${RESET}"
-hr
+$GUM style --foreground 99 "Found ${#LOCATIONS[@]} network location(s): $(IFS=', '; echo "${LOCATIONS[*]}")"
+
+# ── Signing option ────────────────────────────────────────────────────────────
+section "VPNHelper Signing"
+$GUM style --dim "VPNHelper.app is built locally from source. Choose a signing method:"
 echo ""
+
+SIGN_CHOICE=$(choose_one "How should VPNHelper.app be signed?" \
+    "Local build — no extra signing (recommended, Gatekeeper skipped for local builds)" \
+    "Ad-hoc — code integrity only (safe, no developer account needed)" \
+    "Apple Development — free Apple account, no Gatekeeper on your Mac" \
+    "Developer ID — paid \$99/yr, distributable to any Mac")
+
+SIGN_MODE="adhoc"
+SIGN_IDENTITY="-"
+case "$SIGN_CHOICE" in
+    "Local build"*)
+        SIGN_MODE="local"
+        SIGN_IDENTITY="-"
+        ok "Using local build (ad-hoc, no quarantine)" ;;
+    "Ad-hoc"*)
+        SIGN_MODE="adhoc"
+        SIGN_IDENTITY="-"
+        ok "Using ad-hoc signing" ;;
+    "Apple Development"*)
+        SIGN_MODE="dev"
+        SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+        if [[ -z "$SIGN_IDENTITY" ]]; then
+            warn "No Apple Development certificate found"
+            info "Sign in to Xcode with your Apple ID to create one, then re-run"
+            if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
+            SIGN_IDENTITY="-"
+        else
+            ok "Signing with: $SIGN_IDENTITY"
+        fi ;;
+    "Developer ID"*)
+        SIGN_MODE="developerid"
+        SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+        if [[ -z "$SIGN_IDENTITY" ]]; then
+            warn "No Developer ID certificate found"
+            info "Enroll at developer.apple.com ($99/yr) and create a Developer ID certificate"
+            if ! confirm "Fall back to ad-hoc signing?"; then exit 0; fi
+            SIGN_IDENTITY="-"
+        else
+            ok "Signing with: $SIGN_IDENTITY"
+        fi ;;
+esac
 
 # ── Per-location configuration ────────────────────────────────────────────────
 declare -A LOC_DOCKFLOW LOC_PRESET LOC_FIREWALL LOC_STEALTH LOC_AIRDROP \
             LOC_VPN LOC_TUNNEL LOC_KILLAPPS LOC_NOTIFY
 
-# ── DockFlow preset assignment (all locations at once) ────────────────────────
+# DockFlow preset assignment
 if [[ "$HAS_DOCKFLOW" == true ]]; then
+    section "DockFlow Presets"
+    $GUM style --dim "Assign a dock preset to each location (select None to disable)"
     echo ""
-    hr
-    echo -e "${BOLD}Assign DockFlow presets:${RESET}"
-    hr
-    echo -ne "${DIM}Presets: "
-    for i in "${!PRESETS[@]}"; do
-        echo -ne "$((i+1))) ${PRESETS[$i]}  "
-    done
-    echo -e "${RESET}"
-    echo ""
+    PRESET_OPTIONS=("None (disable dock switching)" "${PRESETS[@]}")
     for loc in "${LOCATIONS[@]}"; do
-        while true; do
-            echo -ne "  ${BOLD}$loc${RESET} ${DIM}(0 = skip):${RESET} "
-            read -r choice
-            choice="${choice//[^0-9]/}"
-            if [[ "$choice" == "0" || -z "$choice" ]]; then
-                LOC_DOCKFLOW[$loc]="off"
-                LOC_PRESET[$loc]=""
-                break
-            elif [[ -n "$choice" ]] && (( choice >= 1 && choice <= ${#PRESETS[@]} )); then
-                LOC_DOCKFLOW[$loc]="on"
-                LOC_PRESET[$loc]="${PRESETS[$((choice-1))]}"
-                break
-            fi
-            warn "Enter a number between 1 and ${#PRESETS[@]}, or 0 to skip."
-        done
+        $GUM style --foreground 212 --bold "$loc"
+        CHOICE=$(choose_one "" "${PRESET_OPTIONS[@]}")
+        if [[ "$CHOICE" == "None"* ]]; then
+            LOC_DOCKFLOW[$loc]="off"
+            LOC_PRESET[$loc]=""
+        else
+            LOC_DOCKFLOW[$loc]="on"
+            LOC_PRESET[$loc]="$CHOICE"
+        fi
     done
 else
     for loc in "${LOCATIONS[@]}"; do
@@ -174,104 +207,86 @@ else
     done
 fi
 
+# Per-location feature toggles
+section "Location Features"
+$GUM style --dim "Select features to enable for each location"
+
+FEATURE_LIST=("Firewall" "Stealth mode" "AirDrop" "Notifications")
+[[ "$HAS_VPN" == true ]] && FEATURE_LIST+=("VPN")
+
 for loc in "${LOCATIONS[@]}"; do
     echo ""
-    hr
-    echo -e "${BOLD}Configure: $loc${RESET}"
-    hr
+    $GUM style --foreground 99 --bold --border normal --padding "0 1" --border-foreground 99 "Configure: $loc"
+    echo ""
 
-    default_fw="n"; [[ "$loc" != "Home" ]] && default_fw="y"
-    if ask "Enable firewall?" "$default_fw"; then
-        LOC_FIREWALL[$loc]="on"
-    else
-        LOC_FIREWALL[$loc]="off"
-    fi
+    # Smart defaults per location
+    DEFAULTS=()
+    [[ "$loc" != "Home" ]] && DEFAULTS+=("Firewall")
+    [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && DEFAULTS+=("Stealth mode")
+    [[ "$loc" == "Home" ]] && DEFAULTS+=("AirDrop")
+    DEFAULTS+=("Notifications")
+    [[ "$HAS_VPN" == true && ("$loc" == "Remote" || "$loc" == "Automatic") ]] && DEFAULTS+=("VPN")
 
-    default_st="n"; [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && default_st="y"
-    if ask "Enable stealth mode?" "$default_st"; then
-        LOC_STEALTH[$loc]="on"
-    else
-        LOC_STEALTH[$loc]="off"
-    fi
+    DEFAULT_STR=$(IFS=','; echo "${DEFAULTS[*]}")
 
-    default_ad="y"; [[ "$loc" != "Home" ]] && default_ad="n"
-    if ask "Enable AirDrop?" "$default_ad"; then
-        LOC_AIRDROP[$loc]="on"
-    else
-        LOC_AIRDROP[$loc]="off"
-    fi
+    SELECTED=$(choose_many "Features (↑↓ navigate, space select, enter confirm):" \
+        --selected="$DEFAULT_STR" \
+        "${FEATURE_LIST[@]}")
 
-    if [[ "$HAS_VPN" == true && ${#VPN_TUNNELS[@]} -gt 0 ]]; then
-        default_vpn="n"; [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && default_vpn="y"
-        if ask "Enable VPN?" "$default_vpn"; then
-            LOC_VPN[$loc]="on"
-            if [[ ${#VPN_TUNNELS[@]} -eq 1 ]]; then
-                LOC_TUNNEL[$loc]="${VPN_TUNNELS[0]}"
-                ok "Using tunnel: ${VPN_TUNNELS[0]}"
-            else
-                echo -e "${BOLD}Available tunnels:${RESET}"
-                for i in "${!VPN_TUNNELS[@]}"; do
-                    echo -e "  ${DIM}$((i+1)))${RESET} ${VPN_TUNNELS[$i]}"
-                done
-                while true; do
-                    echo -ne "${DIM}Choose (1–${#VPN_TUNNELS[@]}):${RESET} "
-                    read -r tchoice
-                    tchoice="${tchoice//[^0-9]/}"
-                    if [[ -n "$tchoice" ]] && (( tchoice >= 1 && tchoice <= ${#VPN_TUNNELS[@]} )); then
-                        LOC_TUNNEL[$loc]="${VPN_TUNNELS[$((tchoice-1))]}"
-                        break
-                    fi
-                    warn "Invalid choice, try again."
-                done
-            fi
-        else
-            LOC_VPN[$loc]="off"
-            LOC_TUNNEL[$loc]=""
-        fi
-    else
-        LOC_VPN[$loc]="off"
-        LOC_TUNNEL[$loc]=""
-    fi
+    LOC_FIREWALL[$loc]="off"
+    LOC_STEALTH[$loc]="off"
+    LOC_AIRDROP[$loc]="off"
+    LOC_NOTIFY[$loc]="off"
+    LOC_VPN[$loc]="off"
+    LOC_TUNNEL[$loc]=""
 
-    echo -ne "${BOLD}Apps to quit on switch?${RESET} ${DIM}(comma-separated, or leave blank)${RESET} "
-    read -r killapps
-    LOC_KILLAPPS[$loc]="$killapps"
+    while IFS= read -r feature; do
+        case "$feature" in
+            "Firewall")    LOC_FIREWALL[$loc]="on" ;;
+            "Stealth mode") LOC_STEALTH[$loc]="on" ;;
+            "AirDrop")     LOC_AIRDROP[$loc]="on" ;;
+            "Notifications") LOC_NOTIFY[$loc]="on" ;;
+            "VPN")
+                LOC_VPN[$loc]="on"
+                if [[ ${#VPN_TUNNELS[@]} -eq 1 ]]; then
+                    LOC_TUNNEL[$loc]="${VPN_TUNNELS[0]}"
+                else
+                    $GUM style --foreground 212 "Select VPN tunnel for $loc:"
+                    LOC_TUNNEL[$loc]=$(choose_one "" "${VPN_TUNNELS[@]}")
+                fi ;;
+        esac
+    done <<< "$SELECTED"
 
-    if ask "Show notification on switch?" "y"; then
-        LOC_NOTIFY[$loc]="on"
-    else
-        LOC_NOTIFY[$loc]="off"
-    fi
+    # Kill apps
+    echo ""
+    KILLAPPS=$($GUM input --placeholder "Apps to quit on switch (comma-separated, or leave blank)" --prompt "  Kill apps: ")
+    LOC_KILLAPPS[$loc]="$KILLAPPS"
 done
 
 # ── Review ────────────────────────────────────────────────────────────────────
+section "Review"
 echo ""
-hr
-echo -e "${BOLD}Review your configuration:${RESET}"
-hr
-printf "%-14s %-12s %-10s %-10s %-10s %-20s %-6s\n" "Location" "Dock" "Firewall" "Stealth" "AirDrop" "VPN" "Notify"
-printf "%-14s %-12s %-10s %-10s %-10s %-20s %-6s\n" "--------" "----" "--------" "-------" "-------" "---" "------"
+printf "%-14s %-14s %-10s %-10s %-10s %-20s %-8s\n" \
+    "Location" "Dock" "Firewall" "Stealth" "AirDrop" "VPN" "Notify"
+$GUM style --dim "$(printf '%.0s─' {1..90})"
 for loc in "${LOCATIONS[@]}"; do
-    dock_info="${LOC_DOCKFLOW[$loc]}"
+    dock_info="off"
     [[ "${LOC_DOCKFLOW[$loc]}" == "on" ]] && dock_info="${LOC_PRESET[$loc]}"
-    vpn_info="${LOC_VPN[$loc]}"
+    vpn_info="off"
     [[ "${LOC_VPN[$loc]}" == "on" ]] && vpn_info="${LOC_TUNNEL[$loc]}"
-    printf "%-14s %-12s %-10s %-10s %-10s %-20s %-6s\n" \
+    printf "%-14s %-14s %-10s %-10s %-10s %-20s %-8s\n" \
         "$loc" "$dock_info" "${LOC_FIREWALL[$loc]}" "${LOC_STEALTH[$loc]}" \
         "${LOC_AIRDROP[$loc]}" "$vpn_info" "${LOC_NOTIFY[$loc]}"
 done
 echo ""
 
-# ── Dry run: show generated files and exit ────────────────────────────────────
+# ── Dry run ───────────────────────────────────────────────────────────────────
 if $DRY_RUN; then
-    hr
-    echo -e "${CYAN}${BOLD}[dry-run] settings.conf preview:${RESET}"
-    hr
+    section "Dry Run — Generated settings.conf"
     echo ""
-
     for loc in "${LOCATIONS[@]}"; do
         KEY=$(echo "$loc" | tr '[:lower:]' '[:upper:]' | tr ' ' '_')
-        echo "# $loc"
+        $GUM style --foreground 212 "# $loc"
         echo "${KEY}_dockflow=${LOC_DOCKFLOW[$loc]}"
         [[ "${LOC_DOCKFLOW[$loc]}" == "on" ]] && echo "${KEY}_dockflow_preset=\"${LOC_PRESET[$loc]}\""
         echo "${KEY}_firewall=${LOC_FIREWALL[$loc]}"
@@ -283,36 +298,23 @@ if $DRY_RUN; then
         echo "${KEY}_notification=${LOC_NOTIFY[$loc]}"
         echo ""
     done
-
-    hr
-    echo -e "${CYAN}${BOLD}[dry-run] Location scripts that would be created:${RESET}"
-    hr
-    for loc in "${LOCATIONS[@]}"; do
-        dryrun "$INSTALL_DIR/$loc"
-    done
-    dryrun "$INSTALL_DIR/apply.sh"
-    dryrun "VPNHelper.app (built from source)"
-    echo ""
-    echo -e "${CYAN}Run without --dry-run to apply.${RESET}"
+    info "Run without --dry-run to apply"
     exit 0
 fi
 
-if ! ask "Proceed with installation?" "y"; then
+if ! confirm "Proceed with installation?"; then
     echo "Aborted."
     exit 0
 fi
 
 # ── Generate settings.conf ────────────────────────────────────────────────────
-echo ""
-info "Generating settings.conf..."
-CONF_FILE="$INSTALL_DIR/settings.conf"
+section "Installing"
 mkdir -p "$INSTALL_DIR"
 
 {
 echo "# Dock Switcher Settings — generated by bootstrap.sh"
 echo "# Edit this file to adjust toggles. Changes take effect on next location switch."
 echo ""
-
 for loc in "${LOCATIONS[@]}"; do
     KEY=$(echo "$loc" | tr '[:lower:]' '[:upper:]' | tr ' ' '_')
     echo "# ── $loc ──────────────────────────────────────────────────────────────────────"
@@ -327,11 +329,9 @@ for loc in "${LOCATIONS[@]}"; do
     echo "${KEY}_notification=${LOC_NOTIFY[$loc]}"
     echo ""
 done
-} > "$CONF_FILE"
-ok "settings.conf → $CONF_FILE"
+} > "$INSTALL_DIR/settings.conf"
+ok "settings.conf"
 
-# ── Install scripts ───────────────────────────────────────────────────────────
-info "Installing scripts..."
 cp "$ADDON_DIR/scripts/apply.sh" "$INSTALL_DIR/apply.sh"
 chmod +x "$INSTALL_DIR/apply.sh"
 ok "apply.sh"
@@ -353,7 +353,6 @@ SUDOERS_LINE="$USERNAME ALL=(ALL) NOPASSWD: /usr/libexec/ApplicationFirewall/soc
 if sudo grep -q "socketfilterfw" "$SUDOERS_FILE" 2>/dev/null; then
     ok "Firewall sudoers rule already set"
 else
-    info "Adding firewall sudoers rule (requires sudo)..."
     echo "$SUDOERS_LINE" | sudo tee -a "$SUDOERS_FILE" > /dev/null
     sudo visudo -c -f "$SUDOERS_FILE"
     ok "Firewall sudoers rule added"
@@ -361,31 +360,41 @@ fi
 
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
 VPNHELPER_APP="$ADDON_DIR/VPNHelper/VPNHelper.app"
-if [[ "$HAS_VPN" == true && -n "$SELECTED_TUNNEL" ]]; then
+if [[ "$HAS_VPN" == true ]]; then
     echo ""
-    info "Building VPNHelper.app..."
-    bash "$ADDON_DIR/VPNHelper/build.sh"
+    $GUM spin --spinner dot --title "Building VPNHelper.app..." -- bash -c "
+        mkdir -p '$VPNHELPER_APP/Contents/MacOS' '$VPNHELPER_APP/Contents/Resources'
+        cp '$ADDON_DIR/VPNHelper/Info.plist' '$VPNHELPER_APP/Contents/Info.plist'
+        swiftc '$ADDON_DIR/VPNHelper/main.swift' -o '$VPNHELPER_APP/Contents/MacOS/VPNHelper' -framework Cocoa
+        codesign --force --deep --sign '$SIGN_IDENTITY' '$VPNHELPER_APP'
+    "
+    ok "VPNHelper.app built (signed: ${SIGN_IDENTITY:0:30}...)"
     echo ""
-    info "Opening System Settings → Login Items..."
-    echo -e "  ${YELLOW}Click ${BOLD}+${RESET}${YELLOW} and select:${RESET}"
-    echo -e "  ${BOLD}$VPNHELPER_APP${RESET}"
+    $GUM style --foreground 214 --bold "One manual step required:"
+    $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
     echo ""
-    read -rp "$(echo -e "${DIM}Press Enter when ready to open System Settings...${RESET}")"
+    $GUM style --dim "  Path: $VPNHELPER_APP"
+    echo ""
+    read -rp "$($GUM style --dim 'Press Enter to open System Settings...')"
     open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
     echo ""
-    read -rp "$(echo -e "${DIM}Press Enter once VPNHelper.app is added to Login Items...${RESET}")"
-    ok "VPNHelper.app registered"
+    read -rp "$($GUM style --dim 'Press Enter once VPNHelper.app is added to Login Items...')"
+    ok "VPNHelper registered"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════╗${RESET}"
-echo -e "${GREEN}${BOLD}║           Setup complete!                ║${RESET}"
-echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════╝${RESET}"
+$GUM style \
+    --border rounded \
+    --border-foreground 2 \
+    --padding "1 4" \
+    --bold \
+    --foreground 2 \
+    "Setup complete!"
 echo ""
-
-echo -e "${BOLD}To adjust settings:${RESET}"
-echo "  Edit ~/.wifi-loc-control/settings.conf"
+$GUM style --bold "To adjust settings:"
+$GUM style --dim "  Edit ~/.wifi-loc-control/settings.conf"
 echo ""
-echo -e "${BOLD}Logs:${RESET}"
-echo "  tail -f ~/Library/Logs/WiFiLocControl.log"
+$GUM style --bold "Logs:"
+$GUM style --dim "  tail -f ~/Library/Logs/WiFiLocControl.log"
+echo ""
