@@ -49,13 +49,13 @@ confirm() {
 
 choose_one() {
     local prompt="$1"; shift
-    $GUM style --foreground 212 "$prompt"
+    [[ -n "$prompt" ]] && $GUM style --foreground 212 "$prompt" >/dev/tty
     $GUM choose "$@"
 }
 
 choose_many() {
     local prompt="$1"; shift
-    $GUM style --foreground 212 "$prompt"
+    [[ -n "$prompt" ]] && $GUM style --foreground 212 "$prompt" >/dev/tty
     $GUM choose --no-limit "$@"
 }
 
