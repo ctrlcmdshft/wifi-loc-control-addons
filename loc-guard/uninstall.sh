@@ -2,7 +2,7 @@
 
 INSTALL_DIR="$HOME/.wifi-loc-control"
 
-echo "Uninstalling Dock Switcher addon..."
+echo "Uninstalling Loc Guard addon..."
 
 rm -f "$INSTALL_DIR/apply.sh"
 rm -f "$INSTALL_DIR/vpn-trigger"

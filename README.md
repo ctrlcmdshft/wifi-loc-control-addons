@@ -6,7 +6,7 @@ A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi
 
 | Addon | Description |
 |-------|-------------|
-| [dock-switcher](./dock-switcher) | Switch firewall, stealth mode, AirDrop, VPN, and more per location |
+| [loc-guard](./loc-guard) | Switch firewall, stealth mode, AirDrop, VPN, and more per location |
 
 ## Quick Install
 

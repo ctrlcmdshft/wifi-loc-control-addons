@@ -1,4 +1,4 @@
-# Dock Switcher
+# Loc Guard
 
 An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) that automatically applies security and network settings when your Mac switches network locations.
 
@@ -31,7 +31,7 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 ```bash
 git clone https://github.com/ctrlcmdshft/wifi-loc-control-addons.git
-cd wifi-loc-control-addons/dock-switcher
+cd wifi-loc-control-addons/loc-guard
 chmod +x bootstrap.sh
 ./bootstrap.sh
 ```
@@ -95,7 +95,7 @@ tail -f ~/Library/Logs/WiFiLocControl.log
 ## Uninstall
 
 ```bash
-cd wifi-loc-control-addons/dock-switcher
+cd wifi-loc-control-addons/loc-guard
 chmod +x uninstall.sh
 ./uninstall.sh
 ```

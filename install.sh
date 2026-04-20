@@ -12,4 +12,4 @@ else
     git clone --quiet "$REPO" "$DEST"
 fi
 
-exec "$DEST/dock-switcher/bootstrap.sh" "$@"
+exec "$DEST/loc-guard/bootstrap.sh" "$@"

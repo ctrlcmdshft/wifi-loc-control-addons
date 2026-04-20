@@ -65,7 +65,7 @@ choose_many() {
 
 # ── Header ────────────────────────────────────────────────────────────────────
 clear
-header "Dock Switcher — Interactive Setup"
+header "Loc Guard — Interactive Setup"
 $DRY_RUN && $GUM style --foreground 214 --bold "  DRY RUN — no files will be written"
 
 # ── Requirements ──────────────────────────────────────────────────────────────
