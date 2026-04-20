@@ -58,14 +58,20 @@ trap 'rm -f "$_GUM_TMP"' EXIT
 
 choose_one() {
     local prompt="$1"; shift
-    [[ -n "$prompt" ]] && $GUM style --foreground 212 "$prompt" >/dev/tty
+    if [[ -n "$prompt" ]]; then
+        $GUM style --foreground 212 "$prompt" >/dev/tty
+        drain_tty
+    fi
     $GUM choose "$@" >"$_GUM_TMP"
     cat "$_GUM_TMP"
 }
 
 choose_many() {
     local prompt="$1"; shift
-    [[ -n "$prompt" ]] && $GUM style --foreground 212 "$prompt" >/dev/tty
+    if [[ -n "$prompt" ]]; then
+        $GUM style --foreground 212 "$prompt" >/dev/tty
+        drain_tty
+    fi
     $GUM choose --no-limit "$@" >"$_GUM_TMP"
     cat "$_GUM_TMP"
 }
