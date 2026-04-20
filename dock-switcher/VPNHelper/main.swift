@@ -3,6 +3,7 @@ import Cocoa
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var lastContent = ""
+    private var lastTunnel = ""
 
     private let triggerPath = NSHomeDirectory() + "/.wifi-loc-control/vpn-trigger"
 
@@ -22,11 +23,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard !line.isEmpty, line != lastContent else { return }
         lastContent = line
 
-        let parts = line.split(separator: ":", maxSplits: 1).map(String.init)
+        let parts = line.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
         guard parts.count == 2 else { return }
         let action = parts[0]
-        let tunnel = parts[1]
+        let tunnel = parts[1].isEmpty ? lastTunnel : parts[1]
         guard !tunnel.isEmpty, action == "on" || action == "off" else { return }
+
+        if action == "on" { lastTunnel = tunnel }
 
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/sbin/scutil")
