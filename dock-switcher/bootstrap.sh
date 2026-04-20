@@ -91,7 +91,11 @@ if [[ -x "$DOCKFLOW" ]]; then
     HAS_DOCKFLOW=true
 else
     warn "DockFlow not found — dock switching will be disabled"
-    info "Install DockFlow: https://dockflow.app"
+    info "Install DockFlow: https://dockflow.app then re-run this script"
+    if ! ask "Continue without DockFlow?" "y"; then
+        echo "Install DockFlow from https://dockflow.app and run bootstrap.sh again."
+        exit 0
+    fi
 fi
 
 HAS_VPN=false
