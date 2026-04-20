@@ -407,9 +407,7 @@ fi
 
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
 if [[ "$HAS_VPN" == true ]]; then
-    if [[ "$VPNHELPER_INSTALLED" == true ]]; then
-        ok "VPNHelper.app already built — skipping rebuild"
-    else
+    if [[ "$VPNHELPER_INSTALLED" == false ]]; then
         echo ""
         $GUM spin --spinner dot --title "Building VPNHelper.app..." -- bash -c "
             mkdir -p '$VPNHELPER_APP/Contents/MacOS' '$VPNHELPER_APP/Contents/Resources'
@@ -418,7 +416,7 @@ if [[ "$HAS_VPN" == true ]]; then
             codesign --force --deep --sign - '$VPNHELPER_APP'
         "
         ok "VPNHelper.app built (ad-hoc signed)"
-    fi
+    fi  # end build
 
     # ── Install VPNHelper LaunchAgent ─────────────────────────────────────────
     PLIST="$HOME/Library/LaunchAgents/com.loc-guard.VPNHelper.plist"
