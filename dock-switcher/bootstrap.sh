@@ -146,25 +146,47 @@ if [[ "$HAS_VPN" == true && ${#VPN_TUNNELS[@]} -gt 0 ]]; then
     fi
 fi
 
+# ── DockFlow preset assignment (all locations at once) ────────────────────────
+if [[ "$HAS_DOCKFLOW" == true ]]; then
+    echo ""
+    hr
+    echo -e "${BOLD}Assign DockFlow presets:${RESET}"
+    hr
+    echo -ne "${DIM}Presets: "
+    for i in "${!PRESETS[@]}"; do
+        echo -ne "$((i+1))) ${PRESETS[$i]}  "
+    done
+    echo -e "${RESET}"
+    echo ""
+    for loc in "${LOCATIONS[@]}"; do
+        while true; do
+            echo -ne "  ${BOLD}$loc${RESET} ${DIM}(0 = skip):${RESET} "
+            read -r choice
+            choice="${choice//[^0-9]/}"
+            if [[ "$choice" == "0" || -z "$choice" ]]; then
+                LOC_DOCKFLOW[$loc]="off"
+                LOC_PRESET[$loc]=""
+                break
+            elif [[ -n "$choice" ]] && (( choice >= 1 && choice <= ${#PRESETS[@]} )); then
+                LOC_DOCKFLOW[$loc]="on"
+                LOC_PRESET[$loc]="${PRESETS[$((choice-1))]}"
+                break
+            fi
+            warn "Enter a number between 1 and ${#PRESETS[@]}, or 0 to skip."
+        done
+    done
+else
+    for loc in "${LOCATIONS[@]}"; do
+        LOC_DOCKFLOW[$loc]="off"
+        LOC_PRESET[$loc]=""
+    done
+fi
+
 for loc in "${LOCATIONS[@]}"; do
     echo ""
     hr
     echo -e "${BOLD}Configure: $loc${RESET}"
     hr
-
-    if [[ "$HAS_DOCKFLOW" == true ]]; then
-        if ask "Enable dock switching?" "y"; then
-            LOC_DOCKFLOW[$loc]="on"
-            pick "Which DockFlow preset for $loc?" "${PRESETS[@]}"
-            LOC_PRESET[$loc]="$PICK_RESULT"
-        else
-            LOC_DOCKFLOW[$loc]="off"
-            LOC_PRESET[$loc]=""
-        fi
-    else
-        LOC_DOCKFLOW[$loc]="off"
-        LOC_PRESET[$loc]=""
-    fi
 
     default_fw="n"; [[ "$loc" != "Home" ]] && default_fw="y"
     if ask "Enable firewall?" "$default_fw"; then
