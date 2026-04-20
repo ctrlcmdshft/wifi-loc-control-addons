@@ -393,7 +393,7 @@ fi
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
 if [[ "$HAS_VPN" == true ]]; then
     if [[ "$VPNHELPER_INSTALLED" == true ]]; then
-        ok "VPNHelper.app already installed — skipping rebuild"
+        ok "VPNHelper.app already built — skipping rebuild"
     else
         echo ""
         $GUM spin --spinner dot --title "Building VPNHelper.app..." -- bash -c "
@@ -403,6 +403,12 @@ if [[ "$HAS_VPN" == true ]]; then
             codesign --force --deep --sign - '$VPNHELPER_APP'
         "
         ok "VPNHelper.app built (ad-hoc signed)"
+    fi
+
+    # Always verify VPNHelper is running; if not, prompt to add to Login Items
+    if pgrep -x VPNHelper &>/dev/null; then
+        ok "VPNHelper is running"
+    else
         echo ""
         $GUM style --foreground 214 --bold "One manual step required:"
         $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
