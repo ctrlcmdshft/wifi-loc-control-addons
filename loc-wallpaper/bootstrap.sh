@@ -16,13 +16,6 @@ warn() { $GUM style --foreground 214 "⚠ $*"; }
 err()  { $GUM style --foreground 1   "✗ $*"; }
 info() { $GUM style --foreground 12  "→ $*"; }
 
-drain_tty() {
-    stty -echo </dev/tty 2>/dev/null
-    sleep 0.3
-    while IFS= read -r -t 0.1 -n 1 _d </dev/tty 2>/dev/null; do :; done
-    stty echo </dev/tty 2>/dev/null
-}
-
 # ── Header ────────────────────────────────────────────────────────────────────
 clear
 $GUM style \
@@ -56,7 +49,7 @@ echo ""
 
 # ── Per-location wallpaper ────────────────────────────────────────────────────
 $GUM style --foreground 212 --bold "── Wallpaper per Location"
-$GUM style --faint "Enter the full path to an image file, or leave blank to skip."
+$GUM style --faint "A file picker will open for each location. Cancel to skip."
 echo ""
 
 declare -A LOC_WALLPAPER
@@ -64,16 +57,15 @@ declare -A LOC_WALLPAPER
 for loc in "${LOCATIONS[@]}"; do
     printf '\033[38;5;99m\033[1m┌─ %s ─┐\033[0m\n' "$loc"
     echo ""
-    drain_tty
-    printf '\033[38;5;212m  Wallpaper path for %s (or leave blank):\033[0m\n' "$loc" >/dev/tty
-    IFS= read -r path </dev/tty
-    path="${path/#\~/$HOME}"
-    if [[ -n "$path" && ! -f "$path" ]]; then
-        warn "File not found: $path — skipping"
-        path=""
+    info "Opening file picker for $loc..."
+    path=$(osascript -e "POSIX path of (choose file with prompt \"Select wallpaper for $loc:\" of type {\"public.image\"})" 2>/dev/null || true)
+    path="${path%$'\n'}"
+    if [[ -n "$path" ]]; then
+        ok "$path"
+    else
+        info "Skipped"
     fi
     LOC_WALLPAPER[$loc]="$path"
-    [[ -n "$path" ]] && ok "$path" || info "Skipped"
     echo ""
 done
 
