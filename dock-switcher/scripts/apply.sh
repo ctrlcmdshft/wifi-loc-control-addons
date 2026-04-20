@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 exec 2>&1
 
+# Ensure Homebrew tools are available when run via LaunchAgent (stripped PATH)
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
 LOCATION="$1"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SCRIPT_DIR/settings.conf"

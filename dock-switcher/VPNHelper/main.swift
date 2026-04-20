@@ -21,21 +21,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let raw = try? String(contentsOfFile: triggerPath, encoding: .utf8) else { return }
         let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !line.isEmpty, line != lastContent else { return }
-        lastContent = line
 
         let parts = line.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
-        guard parts.count == 2 else { return }
+        guard parts.count == 2 else { lastContent = line; return }
         let action = parts[0]
         let tunnel = parts[1].isEmpty ? lastTunnel : parts[1]
-        guard !tunnel.isEmpty, action == "on" || action == "off" else { return }
+        guard !tunnel.isEmpty, action == "on" || action == "off" else { lastContent = line; return }
 
         if action == "on" { lastTunnel = tunnel }
 
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/sbin/scutil")
         task.arguments = ["--nc", action == "on" ? "start" : "stop", tunnel]
-        try? task.run()
+        guard (try? task.run()) != nil else { return }
         task.waitUntilExit()
+
+        // Only mark as handled on success so the next poll retries on failure
+        if task.terminationStatus == 0 { lastContent = line }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
