@@ -67,39 +67,77 @@ $DRY_RUN && $GUM style --foreground 214 --bold "  DRY RUN — no files will be w
 # ── Requirements ──────────────────────────────────────────────────────────────
 section "Checking requirements"
 
+# wifi-loc-control
 if [[ ! -f /usr/local/bin/wifi-loc-control.sh ]]; then
-    err "wifi-loc-control is not installed"
-    info "Install it first: https://github.com/vborodulin/wifi-loc-control"
+    err "wifi-loc-control is not installed (required)"
+    echo ""
+    $GUM style --faint "  This addon requires wifi-loc-control to detect network location changes."
+    echo ""
+    WLCACTION=$(choose_one "What would you like to do?" \
+        "Open install page in browser (https://github.com/vborodulin/wifi-loc-control)" \
+        "Exit and install manually")
+    if [[ "$WLCACTION" == "Open"* ]]; then
+        open "https://github.com/vborodulin/wifi-loc-control"
+        echo ""
+        $GUM style --faint "  Install wifi-loc-control, then re-run this script."
+    fi
     exit 1
 fi
 ok "wifi-loc-control"
 
+# terminal-notifier
 if command -v terminal-notifier &>/dev/null; then
     ok "terminal-notifier"
 else
+    warn "terminal-notifier not found"
     if $DRY_RUN; then
-        warn "terminal-notifier not found — would install via Homebrew"
+        info "Would install via: brew install terminal-notifier"
     else
-        warn "terminal-notifier not found — installing..."
-        brew install terminal-notifier
-        ok "terminal-notifier installed"
+        if confirm "Install terminal-notifier via Homebrew? (needed for notifications)"; then
+            $GUM spin --spinner dot --title "Installing terminal-notifier..." -- brew install terminal-notifier
+            ok "terminal-notifier installed"
+        else
+            warn "Skipping — notifications will not work"
+        fi
     fi
 fi
 
+# DockFlow
 HAS_DOCKFLOW=false
 if [[ -x "$DOCKFLOW" ]]; then
     ok "DockFlow"
     HAS_DOCKFLOW=true
 else
     warn "DockFlow not found — dock switching will be disabled"
-    info "Install DockFlow: https://dockflow.app then re-run this script"
-    if ! confirm "Continue without DockFlow?"; then
-        echo ""
-        info "Install DockFlow from https://dockflow.app and run bootstrap.sh again."
-        exit 0
-    fi
+    echo ""
+    $GUM style --faint "  DockFlow lets you save and switch dock layouts per location."
+    echo ""
+    DFACTION=$(choose_one "What would you like to do?" \
+        "Open dockflow.app in browser and wait" \
+        "Continue without DockFlow (dock switching disabled)" \
+        "Exit and install DockFlow first")
+    case "$DFACTION" in
+        "Open"*)
+            open "https://dockflow.app"
+            echo ""
+            info "Install DockFlow, enable its CLI tool (DockFlow Settings → CLI), then press Enter."
+            read -rp ""
+            if [[ -x "$DOCKFLOW" ]]; then
+                ok "DockFlow"
+                HAS_DOCKFLOW=true
+            else
+                warn "DockFlow CLI still not found — continuing with dock switching disabled"
+            fi ;;
+        "Exit"*)
+            echo ""
+            info "Re-run bootstrap.sh after installing DockFlow."
+            exit 0 ;;
+        *)
+            warn "Continuing without DockFlow" ;;
+    esac
 fi
 
+# VPN profiles
 HAS_VPN=false
 VPN_TUNNELS=()
 while IFS= read -r line; do
@@ -111,7 +149,25 @@ if [[ ${#VPN_TUNNELS[@]} -gt 0 ]]; then
     HAS_VPN=true
 else
     warn "No VPN profiles found — VPN switching will be disabled"
-    info "Add a VPN in System Settings → VPN to enable this feature"
+    echo ""
+    $GUM style --faint "  Add a VPN in System Settings → VPN to enable this feature."
+    if confirm "Open System Settings → VPN now?" --default=no; then
+        open "x-apple.systempreferences:com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension"
+        echo ""
+        info "Add a VPN profile, then press Enter to re-check."
+        read -rp ""
+        VPN_TUNNELS=()
+        while IFS= read -r line; do
+            tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
+            [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
+        done < <(scutil --nc list 2>/dev/null | grep "VPN")
+        if [[ ${#VPN_TUNNELS[@]} -gt 0 ]]; then
+            ok "VPN profiles: ${VPN_TUNNELS[*]}"
+            HAS_VPN=true
+        else
+            warn "Still no VPN profiles — VPN switching will be disabled"
+        fi
+    fi
 fi
 
 # ── Read macOS network locations ──────────────────────────────────────────────
