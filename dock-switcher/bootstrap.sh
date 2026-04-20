@@ -351,10 +351,21 @@ else
 fi
 
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
+VPNHELPER_APP="$ADDON_DIR/VPNHelper/VPNHelper.app"
 if [[ "$HAS_VPN" == true && -n "$SELECTED_TUNNEL" ]]; then
     echo ""
     info "Building VPNHelper.app..."
     bash "$ADDON_DIR/VPNHelper/build.sh"
+    echo ""
+    info "Opening System Settings → Login Items..."
+    echo -e "  ${YELLOW}Click ${BOLD}+${RESET}${YELLOW} and select:${RESET}"
+    echo -e "  ${BOLD}$VPNHELPER_APP${RESET}"
+    echo ""
+    read -rp "$(echo -e "${DIM}Press Enter when ready to open System Settings...${RESET}")"
+    open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
+    echo ""
+    read -rp "$(echo -e "${DIM}Press Enter once VPNHelper.app is added to Login Items...${RESET}")"
+    ok "VPNHelper.app registered"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -363,14 +374,6 @@ echo -e "${GREEN}${BOLD}╔═════════════════�
 echo -e "${GREEN}${BOLD}║           Setup complete!                ║${RESET}"
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════╝${RESET}"
 echo ""
-
-if [[ "$HAS_VPN" == true && -n "$SELECTED_TUNNEL" ]]; then
-    echo -e "${BOLD}Action required:${RESET}"
-    echo "  Add VPNHelper.app to Login Items so VPN switching works at login:"
-    echo -e "  ${BLUE}System Settings → General → Login Items & Extensions → +${RESET}"
-    echo "  Select: $ADDON_DIR/VPNHelper/VPNHelper.app"
-    echo ""
-fi
 
 echo -e "${BOLD}To adjust settings:${RESET}"
 echo "  Edit ~/.wifi-loc-control/settings.conf"
