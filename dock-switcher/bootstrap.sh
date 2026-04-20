@@ -115,7 +115,7 @@ load_vpn_tunnels() {
     while IFS= read -r line; do
         tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
         [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
-    done < <(scutil --nc list 2>/dev/null | grep -E "<(VPN|PPP)")
+    done < <(scutil --nc list 2>/dev/null | grep "\[VPN")
 }
 
 load_vpn_tunnels
