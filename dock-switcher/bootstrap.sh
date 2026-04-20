@@ -179,9 +179,7 @@ VPNHELPER_INSTALLED=false
 SIGN_MODE="adhoc"
 SIGN_IDENTITY="-"
 
-if [[ "$HAS_VPN" == true ]] && \
-   [[ -f "$VPNHELPER_APP/Contents/MacOS/VPNHelper" ]] && \
-   pgrep -x VPNHelper &>/dev/null; then
+if [[ "$HAS_VPN" == true ]] && [[ -f "$VPNHELPER_APP/Contents/MacOS/VPNHelper" ]]; then
     VPNHELPER_INSTALLED=true
 fi
 
