@@ -1,8 +1,8 @@
 import Cocoa
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private var source: DispatchSourceFileSystemObject?
-    private var fileDescriptor: Int32 = -1
+    private var timer: Timer?
+    private var lastContent = ""
 
     private let triggerPath = NSHomeDirectory() + "/.wifi-loc-control/vpn-trigger"
 
@@ -10,28 +10,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !FileManager.default.fileExists(atPath: triggerPath) {
             try? "".write(toFile: triggerPath, atomically: true, encoding: .utf8)
         }
-        startWatching()
-    }
-
-    private func startWatching() {
-        fileDescriptor = open(triggerPath, O_EVTONLY)
-        guard fileDescriptor != -1 else { return }
-
-        source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fileDescriptor,
-            eventMask: .write,
-            queue: .global()
-        )
-        source?.setEventHandler { [weak self] in self?.handleTrigger() }
-        source?.setCancelHandler { [weak self] in
-            if let fd = self?.fileDescriptor, fd != -1 { close(fd) }
+        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.checkTrigger()
         }
-        source?.resume()
+        RunLoop.main.add(timer!, forMode: .common)
     }
 
-    private func handleTrigger() {
+    private func checkTrigger() {
         guard let raw = try? String(contentsOfFile: triggerPath, encoding: .utf8) else { return }
         let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !line.isEmpty, line != lastContent else { return }
+        lastContent = line
+
         let parts = line.split(separator: ":", maxSplits: 1).map(String.init)
         guard parts.count == 2 else { return }
         let action = parts[0]
@@ -46,7 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        source?.cancel()
+        timer?.invalidate()
     }
 }
 
