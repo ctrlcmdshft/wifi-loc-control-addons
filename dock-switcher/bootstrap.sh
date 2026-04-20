@@ -113,8 +113,14 @@ VPN_TUNNELS=()
 load_vpn_tunnels() {
     VPN_TUNNELS=()
     while IFS= read -r line; do
-        tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
-        [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
+        # Try proper quoted match first; fall back for scutil-truncated names (no closing ")
+        tunnel=$(echo "$line" | sed -n 's/.*[[:space:]]"\([^"]*\)".*/\1/p')
+        if [[ -z "$tunnel" ]]; then
+            tunnel=$(echo "$line" | sed -n 's/.*[[:space:]]"\([^[]*\)[[:space:]]*\[VPN.*/\1/p' | sed 's/[[:space:]]*$//')
+        fi
+        if [[ -n "$tunnel" ]]; then
+            VPN_TUNNELS+=("$tunnel")
+        fi
     done < <(scutil --nc list 2>/dev/null | grep "\[VPN")
 }
 
