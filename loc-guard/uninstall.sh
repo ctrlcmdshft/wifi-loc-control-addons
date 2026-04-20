@@ -32,8 +32,13 @@ if ! $GUM confirm --default=no "Remove Loc Guard and all its installed files?"; 
 fi
 echo ""
 
-# ── Stop VPNHelper ────────────────────────────────────────────────────────────
-if pgrep -x VPNHelper &>/dev/null; then
+# ── Remove VPNHelper LaunchAgent ─────────────────────────────────────────────
+PLIST="$HOME/Library/LaunchAgents/com.loc-guard.VPNHelper.plist"
+if [[ -f "$PLIST" ]]; then
+    launchctl unload "$PLIST" 2>/dev/null || true
+    rm -f "$PLIST"
+    ok "VPNHelper LaunchAgent removed"
+elif pgrep -x VPNHelper &>/dev/null; then
     pkill -x VPNHelper 2>/dev/null || true
     ok "VPNHelper stopped"
 fi
@@ -73,17 +78,6 @@ fi
 if sudo grep -q "socketfilterfw" "$SUDOERS_FILE" 2>/dev/null; then
     sudo sed -i '' '/socketfilterfw/d' "$SUDOERS_FILE"
     ok "Firewall sudoers rule removed"
-fi
-
-# ── VPNHelper Login Item reminder ─────────────────────────────────────────────
-if [[ -f "$VPNHELPER_APP/Contents/MacOS/VPNHelper" ]]; then
-    echo ""
-    warn "VPNHelper.app is still in Login Items — remove it manually:"
-    info "System Settings → General → Login Items & Extensions"
-    echo ""
-    if $GUM confirm --default=yes "Open Login Items now?"; then
-        open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
-    fi
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────

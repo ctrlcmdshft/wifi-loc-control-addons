@@ -420,26 +420,35 @@ if [[ "$HAS_VPN" == true ]]; then
         ok "VPNHelper.app built (ad-hoc signed)"
     fi
 
-    # Always verify VPNHelper is running; if not, prompt to add to Login Items
-    if pgrep -x VPNHelper &>/dev/null; then
-        ok "VPNHelper is running"
-    else
-        echo ""
-        $GUM style --foreground 214 --bold "One manual step required:"
-        $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
-        echo ""
-        $GUM style --faint "  Path: $VPNHELPER_APP"
-        echo ""
-        printf '\033[2mPress Enter to open System Settings...\033[0m\n' >/dev/tty
-        drain_tty
-        read -r </dev/tty
-        open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
-        echo ""
-        printf '\033[2mPress Enter once VPNHelper.app is added to Login Items...\033[0m\n' >/dev/tty
-        drain_tty
-        read -r </dev/tty
-        ok "VPNHelper registered"
-    fi
+    # ── Install VPNHelper LaunchAgent ─────────────────────────────────────────
+    PLIST="$HOME/Library/LaunchAgents/com.loc-guard.VPNHelper.plist"
+    cat > "$PLIST" << PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.loc-guard.VPNHelper</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$VPNHELPER_APP/Contents/MacOS/VPNHelper</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$HOME/Library/Logs/VPNHelper.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/Library/Logs/VPNHelper.log</string>
+</dict>
+</plist>
+PLISTEOF
+
+    # Load or reload the agent
+    launchctl unload "$PLIST" 2>/dev/null || true
+    launchctl load "$PLIST"
+    ok "VPNHelper LaunchAgent installed and started"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
