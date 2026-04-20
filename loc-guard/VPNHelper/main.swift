@@ -4,6 +4,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var lastContent = ""
     private var lastTunnel = ""
+    private var retryCount = 0
+    private let maxRetries = 3
 
     private let triggerPath = NSHomeDirectory() + "/.wifi-loc-control/vpn-trigger"
 
@@ -36,8 +38,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard (try? task.run()) != nil else { return }
         task.waitUntilExit()
 
-        // Only mark as handled on success so the next poll retries on failure
-        if task.terminationStatus == 0 { lastContent = line }
+        if task.terminationStatus == 0 {
+            lastContent = line
+            retryCount = 0
+        } else {
+            retryCount += 1
+            if retryCount >= maxRetries { lastContent = line; retryCount = 0 }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

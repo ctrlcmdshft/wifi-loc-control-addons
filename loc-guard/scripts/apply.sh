@@ -14,7 +14,7 @@ source "$CONFIG"
 # Build config key: uppercase, spaces to underscores
 KEY=$(echo "$LOCATION" | tr '[:lower:]' '[:upper:]' | tr ' ' '_')
 
-val() { eval echo "\${${KEY}_${1}}"; }
+val() { local _v="${KEY}_${1}"; echo "${!_v}"; }
 
 # ── Firewall ──────────────────────────────────────────────────────────────────
 if [[ "$(val firewall)" == "on" ]]; then
@@ -49,7 +49,8 @@ kill_apps="$(val kill_apps)"
 if [[ -n "$kill_apps" ]]; then
     IFS=',' read -ra apps <<< "$kill_apps"
     for app in "${apps[@]}"; do
-        app="${app// /}"
+        app="${app#"${app%%[![:space:]]*}"}"
+        app="${app%"${app##*[![:space:]]}"}"
         pkill -x "$app" 2>/dev/null || true
     done
 fi
@@ -59,7 +60,7 @@ if [[ "$(val notification)" == "on" ]] && command -v terminal-notifier &>/dev/nu
     summary=()
     [[ "$(val firewall)"     == "on" ]] && summary+=("Firewall on")
     [[ "$(val stealth_mode)" == "on" ]] && summary+=("Stealth on")
-    [[ "$(val airdrop)"      == "on" ]] && summary+=("AirDrop on") || summary+=("AirDrop off")
+    if [[ "$(val airdrop)" == "on" ]]; then summary+=("AirDrop on"); else summary+=("AirDrop off"); fi
     [[ "$(val wireguard)"    == "on" ]] && summary+=("VPN on")
     body=$(IFS=" · "; echo "${summary[*]}")
     terminal-notifier \
