@@ -46,6 +46,13 @@ confirm() {
     $GUM confirm $flag "$prompt"
 }
 
+drain_tty() {
+    stty -echo </dev/tty 2>/dev/null
+    sleep 0.3
+    while IFS= read -r -t 0.1 -n 1 _d </dev/tty 2>/dev/null; do :; done
+    stty echo </dev/tty 2>/dev/null
+}
+
 _GUM_TMP=$(mktemp)
 trap 'rm -f "$_GUM_TMP"' EXIT
 
@@ -197,18 +204,22 @@ for loc in "${LOCATIONS[@]}"; do
     echo ""
     $GUM style --foreground 99 --bold --border normal --padding "0 1" --border-foreground 99 "Configure: $loc"
     echo ""
+    drain_tty  # flush OSC background-color + cursor-position responses from border above
 
-    if [[ -n "$PREV_LOC" ]] && $GUM confirm --default=no "Copy settings from '$PREV_LOC'?"; then
-        LOC_FIREWALL[$loc]="${LOC_FIREWALL[$PREV_LOC]}"
-        LOC_STEALTH[$loc]="${LOC_STEALTH[$PREV_LOC]}"
-        LOC_AIRDROP[$loc]="${LOC_AIRDROP[$PREV_LOC]}"
-        LOC_VPN[$loc]="${LOC_VPN[$PREV_LOC]}"
-        LOC_TUNNEL[$loc]="${LOC_TUNNEL[$PREV_LOC]}"
-        LOC_KILLAPPS[$loc]="${LOC_KILLAPPS[$PREV_LOC]}"
-        LOC_NOTIFY[$loc]="${LOC_NOTIFY[$PREV_LOC]}"
-        ok "Copied from $PREV_LOC"
-        PREV_LOC="$loc"
-        continue
+    if [[ -n "$PREV_LOC" ]]; then
+        if $GUM confirm --default=no "Copy settings from '$PREV_LOC'?"; then
+            LOC_FIREWALL[$loc]="${LOC_FIREWALL[$PREV_LOC]}"
+            LOC_STEALTH[$loc]="${LOC_STEALTH[$PREV_LOC]}"
+            LOC_AIRDROP[$loc]="${LOC_AIRDROP[$PREV_LOC]}"
+            LOC_VPN[$loc]="${LOC_VPN[$PREV_LOC]}"
+            LOC_TUNNEL[$loc]="${LOC_TUNNEL[$PREV_LOC]}"
+            LOC_KILLAPPS[$loc]="${LOC_KILLAPPS[$PREV_LOC]}"
+            LOC_NOTIFY[$loc]="${LOC_NOTIFY[$PREV_LOC]}"
+            ok "Copied from $PREV_LOC"
+            PREV_LOC="$loc"
+            continue
+        fi
+        drain_tty  # flush OSC responses from confirm
     fi
 
     # Smart defaults: current/active location = home-like, others = away-like
@@ -222,11 +233,6 @@ for loc in "${LOCATIONS[@]}"; do
     [[ "$HAS_VPN" == true && "$loc" != "$ACTIVE_LOC" ]] && DEFAULTS+=("VPN")
 
     DEFAULT_STR=$(IFS=','; echo "${DEFAULTS[*]}")
-
-    stty -echo </dev/tty 2>/dev/null
-    sleep 0.15
-    while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
-    stty echo </dev/tty 2>/dev/null
 
     SELECTED=$(choose_many "Features (↑↓ navigate, space select, enter confirm):" \
         --selected="$DEFAULT_STR" \
@@ -256,10 +262,7 @@ for loc in "${LOCATIONS[@]}"; do
 
     # Kill apps
     echo ""
-    stty -echo </dev/tty 2>/dev/null
-    sleep 0.15
-    while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
-    stty echo </dev/tty 2>/dev/null
+    drain_tty
     KILLAPPS=$($GUM input \
         --prompt "  Apps to quit on switch: " \
         --placeholder "Zoom, Slack (comma-separated, or leave blank)" \
@@ -407,18 +410,12 @@ if [[ "$HAS_VPN" == true ]]; then
         $GUM style --faint "  Path: $VPNHELPER_APP"
         echo ""
         $GUM style --faint "Press Enter to open System Settings..." >/dev/tty
-        stty -echo </dev/tty 2>/dev/null
-        sleep 0.15
-        while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
-        stty echo </dev/tty 2>/dev/null
+        drain_tty
         read -r </dev/tty
         open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
         echo ""
         $GUM style --faint "Press Enter once VPNHelper.app is added to Login Items..." >/dev/tty
-        stty -echo </dev/tty 2>/dev/null
-        sleep 0.15
-        while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
-        stty echo </dev/tty 2>/dev/null
+        drain_tty
         read -r </dev/tty
         ok "VPNHelper registered"
     fi
