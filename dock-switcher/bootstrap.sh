@@ -298,20 +298,22 @@ for loc in "${LOCATIONS[@]}"; do
 
     while IFS= read -r feature; do
         case "$feature" in
-            "Firewall")    LOC_FIREWALL[$loc]="on" ;;
-            "Stealth mode") LOC_STEALTH[$loc]="on" ;;
-            "AirDrop")     LOC_AIRDROP[$loc]="on" ;;
+            "Firewall")      LOC_FIREWALL[$loc]="on" ;;
+            "Stealth mode")  LOC_STEALTH[$loc]="on" ;;
+            "AirDrop")       LOC_AIRDROP[$loc]="on" ;;
             "Notifications") LOC_NOTIFY[$loc]="on" ;;
-            "VPN")
-                LOC_VPN[$loc]="on"
-                if [[ ${#VPN_TUNNELS[@]} -eq 1 ]]; then
-                    LOC_TUNNEL[$loc]="${VPN_TUNNELS[0]}"
-                else
-                    $GUM style --foreground 212 "Select VPN tunnel for $loc:"
-                    LOC_TUNNEL[$loc]=$(choose_one "" "${VPN_TUNNELS[@]}")
-                fi ;;
+            "VPN")           LOC_VPN[$loc]="on" ;;
         esac
     done <<< "$SELECTED"
+
+    if [[ "${LOC_VPN[$loc]}" == "on" ]]; then
+        if [[ ${#VPN_TUNNELS[@]} -eq 1 ]]; then
+            LOC_TUNNEL[$loc]="${VPN_TUNNELS[0]}"
+        else
+            echo ""
+            LOC_TUNNEL[$loc]=$(choose_one "Select VPN tunnel for $loc:" "${VPN_TUNNELS[@]}")
+        fi
+    fi
 
     # Kill apps
     echo ""
