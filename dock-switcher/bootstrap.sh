@@ -151,11 +151,30 @@ else
 fi
 
 # ── Read macOS network locations ──────────────────────────────────────────────
+section "Detecting network locations"
+
 LOCATIONS=()
+ACTIVE_LOC=""
 while IFS= read -r line; do
     loc=$(echo "$line" | sed 's/.*(\(.*\))/\1/')
-    [[ -n "$loc" ]] && LOCATIONS+=("$loc")
-done < <(scselect 2>/dev/null | grep -E '^\s+[\*]?\s+[A-F0-9-]+\s+\(' | sed 's/^ \* //' | sed 's/^   //')
+    [[ -z "$loc" ]] && continue
+    LOCATIONS+=("$loc")
+    echo "$line" | grep -q '^\s*\*' && ACTIVE_LOC="$loc"
+done < <(scselect 2>/dev/null | grep -E '^\s+\*?\s+[A-F0-9-]+')
+
+if [[ ${#LOCATIONS[@]} -eq 0 ]]; then
+    err "No macOS network locations found"
+    info "Create locations in System Settings → Network → Locations"
+    exit 1
+fi
+
+for loc in "${LOCATIONS[@]}"; do
+    if [[ "$loc" == "$ACTIVE_LOC" ]]; then
+        ok "$loc  (current)"
+    else
+        ok "$loc"
+    fi
+done
 
 # ── Read DockFlow presets ─────────────────────────────────────────────────────
 PRESETS=()
@@ -165,9 +184,6 @@ if [[ "$HAS_DOCKFLOW" == true ]]; then
         [[ -n "$preset" && "$preset" != "$line" ]] && PRESETS+=("$preset")
     done < <("$DOCKFLOW" list 2>/dev/null | grep "^-")
 fi
-
-echo ""
-$GUM style --foreground 99 "Found ${#LOCATIONS[@]} network location(s): $(IFS=', '; echo "${LOCATIONS[*]}")"
 
 # ── Signing option ────────────────────────────────────────────────────────────
 section "VPNHelper Signing"
@@ -255,13 +271,15 @@ for loc in "${LOCATIONS[@]}"; do
     $GUM style --foreground 99 --bold --border normal --padding "0 1" --border-foreground 99 "Configure: $loc"
     echo ""
 
-    # Smart defaults per location
+    # Smart defaults: current/active location = home-like, others = away-like
     DEFAULTS=()
-    [[ "$loc" != "Home" ]] && DEFAULTS+=("Firewall")
-    [[ "$loc" == "Remote" || "$loc" == "Automatic" ]] && DEFAULTS+=("Stealth mode")
-    [[ "$loc" == "Home" ]] && DEFAULTS+=("AirDrop")
+    if [[ "$loc" == "$ACTIVE_LOC" ]]; then
+        DEFAULTS+=("AirDrop")
+    else
+        DEFAULTS+=("Firewall")
+    fi
     DEFAULTS+=("Notifications")
-    [[ "$HAS_VPN" == true && ("$loc" == "Remote" || "$loc" == "Automatic") ]] && DEFAULTS+=("VPN")
+    [[ "$HAS_VPN" == true && "$loc" != "$ACTIVE_LOC" ]] && DEFAULTS+=("VPN")
 
     DEFAULT_STR=$(IFS=','; echo "${DEFAULTS[*]}")
 
