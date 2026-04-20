@@ -135,7 +135,7 @@ $GUM style --foreground 99 "Found ${#LOCATIONS[@]} network location(s): $(IFS=',
 
 # ── Signing option ────────────────────────────────────────────────────────────
 section "VPNHelper Signing"
-$GUM style --dim "VPNHelper.app is built locally from source. Choose a signing method:"
+$GUM style --faint "VPNHelper.app is built locally from source. Choose a signing method:"
 echo ""
 
 SIGN_CHOICE=$(choose_one "How should VPNHelper.app be signed?" \
@@ -186,7 +186,7 @@ declare -A LOC_DOCKFLOW LOC_PRESET LOC_FIREWALL LOC_STEALTH LOC_AIRDROP \
 # DockFlow preset assignment
 if [[ "$HAS_DOCKFLOW" == true ]]; then
     section "DockFlow Presets"
-    $GUM style --dim "Assign a dock preset to each location (select None to disable)"
+    $GUM style --faint "Assign a dock preset to each location (select None to disable)"
     echo ""
     PRESET_OPTIONS=("None (disable dock switching)" "${PRESETS[@]}")
     for loc in "${LOCATIONS[@]}"; do
@@ -209,7 +209,7 @@ fi
 
 # Per-location feature toggles
 section "Location Features"
-$GUM style --dim "Select features to enable for each location"
+$GUM style --faint "Select features to enable for each location"
 
 FEATURE_LIST=("Firewall" "Stealth mode" "AirDrop" "Notifications")
 [[ "$HAS_VPN" == true ]] && FEATURE_LIST+=("VPN")
@@ -268,7 +268,7 @@ section "Review"
 echo ""
 printf "%-14s %-14s %-10s %-10s %-10s %-20s %-8s\n" \
     "Location" "Dock" "Firewall" "Stealth" "AirDrop" "VPN" "Notify"
-$GUM style --dim "$(printf '%.0s─' {1..90})"
+$GUM style --faint "$(printf '%.0s─' {1..90})"
 for loc in "${LOCATIONS[@]}"; do
     dock_info="off"
     [[ "${LOC_DOCKFLOW[$loc]}" == "on" ]] && dock_info="${LOC_PRESET[$loc]}"
@@ -373,12 +373,12 @@ if [[ "$HAS_VPN" == true ]]; then
     $GUM style --foreground 214 --bold "One manual step required:"
     $GUM style "Add VPNHelper.app to Login Items so VPN switching works at login."
     echo ""
-    $GUM style --dim "  Path: $VPNHELPER_APP"
+    $GUM style --faint "  Path: $VPNHELPER_APP"
     echo ""
-    read -rp "$($GUM style --dim 'Press Enter to open System Settings...')"
+    read -rp "$($GUM style --faint 'Press Enter to open System Settings...')"
     open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
     echo ""
-    read -rp "$($GUM style --dim 'Press Enter once VPNHelper.app is added to Login Items...')"
+    read -rp "$($GUM style --faint 'Press Enter once VPNHelper.app is added to Login Items...')"
     ok "VPNHelper registered"
 fi
 
@@ -393,8 +393,8 @@ $GUM style \
     "Setup complete!"
 echo ""
 $GUM style --bold "To adjust settings:"
-$GUM style --dim "  Edit ~/.wifi-loc-control/settings.conf"
+$GUM style --faint "  Edit ~/.wifi-loc-control/settings.conf"
 echo ""
 $GUM style --bold "Logs:"
-$GUM style --dim "  tail -f ~/Library/Logs/WiFiLocControl.log"
+$GUM style --faint "  tail -f ~/Library/Logs/WiFiLocControl.log"
 echo ""
