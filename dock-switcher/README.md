@@ -41,7 +41,7 @@ All configuration lives in `~/.wifi-loc-control/settings.conf`. Toggle features 
 
 ```bash
 # Change the VPN tunnel (must match name in System Settings → VPN)
-WIREGUARD_TUNNEL="US-NJ-67"
+WIREGUARD_TUNNEL="YOUR-TUNNEL-NAME"
 
 # Per-location toggles
 HOME_dockflow=on

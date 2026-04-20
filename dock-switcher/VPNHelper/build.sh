@@ -13,7 +13,15 @@ swiftc "$SCRIPT_DIR/main.swift" \
     -o "$APP/Contents/MacOS/VPNHelper" \
     -framework Cocoa
 
-codesign --force --deep --sign - "$APP"
+# Detect best available signing identity
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -o '"[^"]*"' | head -1 | tr -d '"')
+if [[ -n "$IDENTITY" ]]; then
+    echo "Signing with: $IDENTITY"
+    codesign --force --deep --sign "$IDENTITY" "$APP"
+else
+    echo "No developer certificate found — using ad-hoc signing"
+    codesign --force --deep --sign - "$APP"
+fi
 
 echo "Built and signed: $APP"
 echo ""
