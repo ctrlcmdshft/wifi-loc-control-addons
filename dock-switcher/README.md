@@ -19,7 +19,7 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 - macOS 14+
 - [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) installed
 - [DockFlow](https://dockflow.app) _(optional — for dock switching)_
-- [WireGuard](https://apps.apple.com/app/wireguard/id1451685025) with a VPN profile imported _(optional — for VPN switching)_
+- Any VPN configured in **System Settings → VPN** _(optional — for VPN switching. Works with WireGuard, ProtonVPN, OpenVPN, L2TP, etc.)_
 - `terminal-notifier` — installed automatically by bootstrap
 
 ## Installation
@@ -92,6 +92,8 @@ Wi-Fi changes
 ```
 
 ## VPN Notes
+
+VPN switching works with any VPN configured in **System Settings → VPN** — WireGuard, ProtonVPN, L2TP, IKEv2, etc. Set `WIREGUARD_TUNNEL` in `settings.conf` to the exact name shown in System Settings.
 
 VPN switching uses a tiny invisible Login Item (`VPNHelper.app`) built from source during setup. It runs in the background at login with no dock icon, menu bar icon, or any UI. It watches for the trigger file written by `apply.sh` and calls `scutil --nc start/stop` with the proper macOS session access needed for Network Extensions.
 

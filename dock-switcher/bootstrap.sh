@@ -85,15 +85,16 @@ fi
 
 HAS_WIREGUARD=false
 WG_TUNNELS=()
-if scutil --nc list 2>/dev/null | grep -q "com.wireguard"; then
-    ok "WireGuard VPN profiles"
+while IFS= read -r line; do
+    tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
+    [[ -n "$tunnel" ]] && WG_TUNNELS+=("$tunnel")
+done < <(scutil --nc list 2>/dev/null | grep "VPN")
+if [[ ${#WG_TUNNELS[@]} -gt 0 ]]; then
+    ok "VPN profiles found: ${WG_TUNNELS[*]}"
     HAS_WIREGUARD=true
-    while IFS= read -r line; do
-        tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
-        [[ -n "$tunnel" ]] && WG_TUNNELS+=("$tunnel")
-    done < <(scutil --nc list 2>/dev/null | grep "com.wireguard")
 else
-    warn "No WireGuard VPN profiles found — VPN switching will be disabled"
+    warn "No VPN profiles found — VPN switching will be disabled"
+    info "Add a VPN in System Settings → VPN to enable this feature"
 fi
 
 # ── Read macOS network locations ──────────────────────────────────────────────
