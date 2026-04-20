@@ -47,16 +47,21 @@ confirm() {
     $GUM confirm $flag "$prompt"
 }
 
+_GUM_TMP=$(mktemp)
+trap 'rm -f "$_GUM_TMP"' EXIT
+
 choose_one() {
     local prompt="$1"; shift
     [[ -n "$prompt" ]] && $GUM style --foreground 212 "$prompt" >/dev/tty
-    $GUM choose "$@"
+    $GUM choose "$@" >"$_GUM_TMP"
+    cat "$_GUM_TMP"
 }
 
 choose_many() {
     local prompt="$1"; shift
     [[ -n "$prompt" ]] && $GUM style --foreground 212 "$prompt" >/dev/tty
-    $GUM choose --no-limit "$@"
+    $GUM choose --no-limit "$@" >"$_GUM_TMP"
+    cat "$_GUM_TMP"
 }
 
 # ── Header ────────────────────────────────────────────────────────────────────
@@ -315,11 +320,13 @@ for loc in "${LOCATIONS[@]}"; do
         fi
     fi
 
-    # Kill apps — flush gum's leftover terminal query responses before reading
+    # Kill apps — silence echo while draining gum's leftover terminal query bytes
     echo ""
     $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
+    stty -echo </dev/tty 2>/dev/null
     sleep 0.15
     while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
+    stty echo </dev/tty 2>/dev/null
     IFS= read -r KILLAPPS </dev/tty
     LOC_KILLAPPS[$loc]="$KILLAPPS"
 done
