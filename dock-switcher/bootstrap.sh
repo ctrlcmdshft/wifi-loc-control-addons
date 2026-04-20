@@ -387,6 +387,35 @@ else
     ok "Firewall sudoers rule added"
 fi
 
+# ── Register VPN services in all network locations ────────────────────────────
+if [[ "$HAS_VPN" == true ]]; then
+    SCUTIL_CMDS=$(python3 - <<'PYEOF'
+import plistlib
+with open("/Library/Preferences/SystemConfiguration/preferences.plist", "rb") as f:
+    p = plistlib.load(f)
+ns = p.get("NetworkServices", {})
+vpn_uuids = [u for u, s in ns.items() if s.get("Interface", {}).get("Type") in ("VPN", "PPP")]
+lines = []
+for set_id, set_data in p.get("Sets", {}).items():
+    svcs = set_data.get("Network", {}).get("Service", {})
+    for uuid in vpn_uuids:
+        if uuid not in svcs:
+            lines.append(f"set /Sets/{set_id}/Network/Service/{uuid} /NetworkServices/{uuid}")
+if lines:
+    print("\n".join(lines))
+    print("commit")
+    print("apply")
+    print("CHANGED")
+PYEOF
+)
+    if [[ "$SCUTIL_CMDS" == *"CHANGED"* ]]; then
+        echo "${SCUTIL_CMDS%CHANGED}" | sudo scutil --prefs
+        ok "VPN services registered in all network locations"
+    else
+        ok "VPN services already registered in all network locations"
+    fi
+fi
+
 # ── Build VPNHelper.app ───────────────────────────────────────────────────────
 if [[ "$HAS_VPN" == true ]]; then
     if [[ "$VPNHELPER_INSTALLED" == true ]]; then
