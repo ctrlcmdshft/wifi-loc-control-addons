@@ -263,10 +263,8 @@ for loc in "${LOCATIONS[@]}"; do
     # Kill apps
     echo ""
     drain_tty
-    KILLAPPS=$($GUM input \
-        --prompt "  Apps to quit on switch: " \
-        --placeholder "Zoom, Slack (comma-separated, or leave blank)" \
-        --value "${LOC_KILLAPPS[$loc]:-}")
+    $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
+    IFS= read -r KILLAPPS </dev/tty
     LOC_KILLAPPS[$loc]="$KILLAPPS"
 
     PREV_LOC="$loc"
