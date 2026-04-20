@@ -18,7 +18,7 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 - macOS 14+
 - [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) installed
-- [DockFlow](https://dockflow.app) _(optional — for dock switching)_
+- [DockFlow](https://dockflow.app) — required for dock switching. Install the CLI tool from within DockFlow's settings.
 - Any VPN configured in **System Settings → VPN** _(optional — for VPN switching. Works with WireGuard, ProtonVPN, OpenVPN, L2TP, etc.)_
 - `terminal-notifier` — installed automatically by bootstrap
 
