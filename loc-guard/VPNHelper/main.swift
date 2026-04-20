@@ -24,8 +24,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !line.isEmpty, line != lastContent else { return }
 
-        let parts = line.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
-        guard parts.count == 2 else { lastContent = line; return }
+        let parts = line.split(separator: ":", maxSplits: 2, omittingEmptySubsequences: false).map(String.init)
+        guard parts.count >= 2 else { lastContent = line; return }
         let action = parts[0]
         let tunnel = parts[1].isEmpty ? lastTunnel : parts[1]
         guard !tunnel.isEmpty, action == "on" || action == "off" else { lastContent = line; return }
