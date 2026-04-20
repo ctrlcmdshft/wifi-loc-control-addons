@@ -7,6 +7,7 @@ A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi
 | Addon | Description |
 |-------|-------------|
 | [loc-guard](./loc-guard) | Switch firewall, stealth mode, AirDrop, VPN, and more per location |
+| [loc-wallpaper](./loc-wallpaper) | Switch desktop wallpaper per location |
 
 ## Quick Install
 

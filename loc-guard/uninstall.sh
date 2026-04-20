@@ -43,11 +43,21 @@ rm -f "$INSTALL_DIR/apply.sh"
 rm -f "$INSTALL_DIR/vpn-trigger"
 ok "apply.sh removed"
 
-# Remove location scripts (any file in INSTALL_DIR that is executable and not a known config)
+# Remove location dispatcher scripts
 while IFS= read -r script; do
     rm -f "$script"
 done < <(find "$INSTALL_DIR" -maxdepth 1 -type f -perm +0111 ! -name "*.sh" ! -name "*.conf" 2>/dev/null)
 ok "Location scripts removed"
+
+# Remove loc-guard hooks (leave other addons' hooks intact)
+if [[ -d "$INSTALL_DIR/hooks" ]]; then
+    find "$INSTALL_DIR/hooks" -name "01-loc-guard" -delete 2>/dev/null
+    # Remove any now-empty location hook dirs
+    find "$INSTALL_DIR/hooks" -mindepth 1 -maxdepth 1 -type d -empty -delete 2>/dev/null
+    # Remove hooks dir itself if empty
+    rmdir "$INSTALL_DIR/hooks" 2>/dev/null || true
+    ok "loc-guard hooks removed"
+fi
 
 # ── Remove settings.conf ──────────────────────────────────────────────────────
 if [[ -f "$INSTALL_DIR/settings.conf" ]]; then

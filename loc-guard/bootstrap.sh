@@ -340,14 +340,29 @@ chmod +x "$INSTALL_DIR/apply.sh"
 ok "apply.sh"
 
 for loc in "${LOCATIONS[@]}"; do
-    script="$INSTALL_DIR/$loc"
-    cat > "$script" << EOF
+    # Dispatcher — runs all hooks/<loc>/NN-* scripts in order
+    cat > "$INSTALL_DIR/$loc" << 'DISPATCHER'
 #!/usr/bin/env bash
 exec 2>&1
-"\$(dirname "\$0")/apply.sh" "$loc"
-EOF
-    chmod +x "$script"
-    ok "Location script: $loc"
+LOCATION="$(basename "$0")"
+HOOKS_DIR="$(dirname "$0")/hooks/$LOCATION"
+[[ -d "$HOOKS_DIR" ]] || exit 0
+for hook in "$HOOKS_DIR"/[0-9][0-9]-*; do
+    [[ -x "$hook" ]] || continue
+    "$hook" "$LOCATION"
+done
+DISPATCHER
+    chmod +x "$INSTALL_DIR/$loc"
+
+    # loc-guard hook
+    mkdir -p "$INSTALL_DIR/hooks/$loc"
+    cat > "$INSTALL_DIR/hooks/$loc/01-loc-guard" << 'HOOK'
+#!/usr/bin/env bash
+exec 2>&1
+"$HOME/.wifi-loc-control/apply.sh" "$1"
+HOOK
+    chmod +x "$INSTALL_DIR/hooks/$loc/01-loc-guard"
+    ok "Location: $loc"
 done
 
 # ── Sudoers ───────────────────────────────────────────────────────────────────
