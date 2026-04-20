@@ -113,33 +113,8 @@ if [[ -x "$DOCKFLOW" ]]; then
     ok "DockFlow"
     HAS_DOCKFLOW=true
 else
-    warn "DockFlow not found — dock switching will be disabled"
-    echo ""
-    $GUM style --faint "  DockFlow lets you save and switch dock layouts per location."
-    echo ""
-    DFACTION=$(choose_one "What would you like to do?" \
-        "Open dockflow.app in browser and wait" \
-        "Continue without DockFlow (dock switching disabled)" \
-        "Exit and install DockFlow first")
-    case "$DFACTION" in
-        "Open"*)
-            open "https://dockflow.app"
-            echo ""
-            info "Install DockFlow, enable its CLI tool (DockFlow Settings → CLI), then press Enter."
-            read -rp ""
-            if [[ -x "$DOCKFLOW" ]]; then
-                ok "DockFlow"
-                HAS_DOCKFLOW=true
-            else
-                warn "DockFlow CLI still not found — continuing with dock switching disabled"
-            fi ;;
-        "Exit"*)
-            echo ""
-            info "Re-run bootstrap.sh after installing DockFlow."
-            exit 0 ;;
-        *)
-            warn "Continuing without DockFlow" ;;
-    esac
+    warn "DockFlow not found — dock switching will be skipped"
+    info "Install from https://dockflow.app and re-run to enable dock switching"
 fi
 
 # VPN profiles
