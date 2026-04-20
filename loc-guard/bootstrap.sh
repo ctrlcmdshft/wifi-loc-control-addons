@@ -79,6 +79,79 @@ clear
 header "Loc Guard — Interactive Setup"
 $DRY_RUN && $GUM style --foreground 214 --bold "  DRY RUN — no files will be written"
 
+# ── Update mode (existing install detected) ───────────────────────────────────
+if [[ -f "$INSTALL_DIR/settings.conf" ]] && ! $DRY_RUN; then
+    echo ""
+    $GUM style --foreground 212 --bold "Existing install detected."
+    $GUM style --faint "  Settings: $INSTALL_DIR/settings.conf"
+    echo ""
+    drain_tty
+    UPDATE_MODE=$(choose_one "" \
+        "Update — keep existing settings, reinstall scripts and VPNHelper" \
+        "Reconfigure — run full interactive setup")
+    echo ""
+
+    if [[ "$UPDATE_MODE" == "Update"* ]]; then
+        section "Updating"
+        mkdir -p "$INSTALL_DIR"
+
+        cp "$ADDON_DIR/scripts/apply.sh" "$INSTALL_DIR/apply.sh"
+        chmod +x "$INSTALL_DIR/apply.sh"
+        ok "apply.sh"
+
+        # Rebuild VPNHelper if binary is missing
+        VPNHELPER_APP="$ADDON_DIR/VPNHelper/VPNHelper.app"
+        if [[ ! -f "$VPNHELPER_APP/Contents/MacOS/VPNHelper" ]]; then
+            $GUM spin --spinner dot --title "Building VPNHelper.app..." -- bash -c "
+                mkdir -p '$VPNHELPER_APP/Contents/MacOS' '$VPNHELPER_APP/Contents/Resources'
+                cp '$ADDON_DIR/VPNHelper/Info.plist' '$VPNHELPER_APP/Contents/Info.plist'
+                swiftc '$ADDON_DIR/VPNHelper/main.swift' -o '$VPNHELPER_APP/Contents/MacOS/VPNHelper' -framework Cocoa
+                codesign --force --deep --sign - '$VPNHELPER_APP'
+            "
+            ok "VPNHelper.app built (ad-hoc signed)"
+        fi
+
+        # Reinstall LaunchAgent
+        PLIST="$HOME/Library/LaunchAgents/com.loc-guard.VPNHelper.plist"
+        cat > "$PLIST" << PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.loc-guard.VPNHelper</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$VPNHELPER_APP/Contents/MacOS/VPNHelper</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$HOME/Library/Logs/VPNHelper.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/Library/Logs/VPNHelper.log</string>
+</dict>
+</plist>
+PLISTEOF
+        launchctl unload "$PLIST" 2>/dev/null || true
+        launchctl load "$PLIST"
+        ok "VPNHelper LaunchAgent reloaded"
+
+        echo ""
+        $GUM style \
+            --border rounded \
+            --border-foreground 2 \
+            --padding "1 4" \
+            --bold \
+            --foreground 2 \
+            "Update complete!"
+        echo ""
+        exit 0
+    fi
+fi
+
 # ── Requirements ──────────────────────────────────────────────────────────────
 section "Checking requirements"
 
