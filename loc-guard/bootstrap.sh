@@ -415,12 +415,12 @@ if [[ "$HAS_VPN" == true ]]; then
         echo ""
         $GUM style --faint "  Path: $VPNHELPER_APP"
         echo ""
-        $GUM style --faint "Press Enter to open System Settings..." >/dev/tty
+        printf '\033[2mPress Enter to open System Settings...\033[0m\n' >/dev/tty
         drain_tty
         read -r </dev/tty
         open "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
         echo ""
-        $GUM style --faint "Press Enter once VPNHelper.app is added to Login Items..." >/dev/tty
+        printf '\033[2mPress Enter once VPNHelper.app is added to Login Items...\033[0m\n' >/dev/tty
         drain_tty
         read -r </dev/tty
         ok "VPNHelper registered"
