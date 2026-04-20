@@ -42,9 +42,9 @@ fi
 
 # ── WireGuard VPN ─────────────────────────────────────────────────────────────
 if [[ "$(val wireguard)" == "on" ]]; then
-    echo "on" > "$SCRIPT_DIR/vpn-trigger"
+    echo "on:$(val wireguard_tunnel)" > "$SCRIPT_DIR/vpn-trigger"
 else
-    echo "off" > "$SCRIPT_DIR/vpn-trigger"
+    echo "off:$(val wireguard_tunnel)" > "$SCRIPT_DIR/vpn-trigger"
 fi
 
 # ── Kill Apps ─────────────────────────────────────────────────────────────────

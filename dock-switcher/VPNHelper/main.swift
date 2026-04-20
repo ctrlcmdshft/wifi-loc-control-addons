@@ -5,27 +5,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var fileDescriptor: Int32 = -1
 
     private let triggerPath = NSHomeDirectory() + "/.wifi-loc-control/vpn-trigger"
-    private let configPath  = NSHomeDirectory() + "/.wifi-loc-control/settings.conf"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !FileManager.default.fileExists(atPath: triggerPath) {
             try? "".write(toFile: triggerPath, atomically: true, encoding: .utf8)
         }
         startWatching()
-    }
-
-    private func tunnelName() -> String {
-        guard let config = try? String(contentsOfFile: configPath, encoding: .utf8) else { return "" }
-        for line in config.components(separatedBy: "\n") {
-            if line.hasPrefix("WIREGUARD_TUNNEL=") {
-                return line
-                    .components(separatedBy: "=")
-                    .dropFirst()
-                    .joined(separator: "=")
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "\"' \n"))
-            }
-        }
-        return ""
     }
 
     private func startWatching() {
@@ -46,8 +31,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleTrigger() {
         guard let raw = try? String(contentsOfFile: triggerPath, encoding: .utf8) else { return }
-        let action = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        let tunnel = tunnelName()
+        let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = line.split(separator: ":", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return }
+        let action = parts[0]
+        let tunnel = parts[1]
         guard !tunnel.isEmpty, action == "on" || action == "off" else { return }
 
         let task = Process()
