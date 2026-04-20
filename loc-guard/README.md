@@ -39,8 +39,7 @@ chmod +x bootstrap.sh
 The interactive installer will:
 - Detect your macOS network locations
 - Let you configure features per location
-- Build and register `VPNHelper.app` (if VPN is needed)
-- Guide you through adding it to Login Items (first install only)
+- Build `VPNHelper.app` and install it as a LaunchAgent (if VPN is needed)
 
 Re-running `bootstrap.sh` updates your settings without rebuilding VPNHelper.
 
@@ -74,7 +73,7 @@ Wi-Fi changes
     → apply.sh reads settings.conf and applies:
          firewall, stealth mode, AirDrop, kill apps, notification
          writes vpn-trigger file
-    → VPNHelper.app (Login Item) sees the trigger
+    → VPNHelper.app (LaunchAgent) sees the trigger
     → connects/disconnects VPN via scutil
 ```
 
