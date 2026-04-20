@@ -41,7 +41,7 @@ The interactive installer will:
 - Let you configure features per location
 - Build `VPNHelper.app` and install it as a LaunchAgent (if VPN is needed)
 
-Re-running `bootstrap.sh` updates your settings without rebuilding VPNHelper.
+Re-running `bootstrap.sh` detects an existing install and offers to update scripts and VPNHelper without touching your settings, or run a full reconfigure.
 
 ## Configuration
 
