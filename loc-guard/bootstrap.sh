@@ -60,7 +60,8 @@ choose_one() {
     local prompt="$1"; shift
     [[ -n "$prompt" ]] && printf '\033[38;5;212m%s\033[0m\n' "$prompt" >/dev/tty
     drain_tty
-    $GUM choose "$@" >"$_GUM_TMP"
+    COLORFGBG="15;0" $GUM choose "$@" >"$_GUM_TMP"
+    drain_tty
     cat "$_GUM_TMP"
 }
 
@@ -68,7 +69,8 @@ choose_many() {
     local prompt="$1"; shift
     [[ -n "$prompt" ]] && printf '\033[38;5;212m%s\033[0m\n' "$prompt" >/dev/tty
     drain_tty
-    $GUM choose --no-limit "$@" >"$_GUM_TMP"
+    COLORFGBG="15;0" $GUM choose --no-limit "$@" >"$_GUM_TMP"
+    drain_tty
     cat "$_GUM_TMP"
 }
 
@@ -263,8 +265,7 @@ for loc in "${LOCATIONS[@]}"; do
 
     # Kill apps
     echo ""
-    drain_tty
-    $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
+    printf '\033[38;5;212m  Apps to quit on switch for %s (comma-separated, or leave blank):\033[0m\n' "$loc" >/dev/tty
     IFS= read -r KILLAPPS </dev/tty
     LOC_KILLAPPS[$loc]="$KILLAPPS"
 
