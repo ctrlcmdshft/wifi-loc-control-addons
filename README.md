@@ -8,6 +8,7 @@ A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi
 |-------|-------------|
 | [loc-guard](./loc-guard) | Switch firewall, stealth mode, AirDrop, VPN, and more per location |
 | [loc-wallpaper](./loc-wallpaper) | Switch desktop wallpaper per location |
+| [loc-audio](./loc-audio) | Switch audio output device and volume per location |
 
 ## Quick Install
 
