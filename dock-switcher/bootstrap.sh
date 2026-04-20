@@ -109,10 +109,16 @@ fi
 # VPN profiles
 HAS_VPN=false
 VPN_TUNNELS=()
-while IFS= read -r line; do
-    tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
-    [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
-done < <(scutil --nc list 2>/dev/null | grep "VPN")
+
+load_vpn_tunnels() {
+    VPN_TUNNELS=()
+    while IFS= read -r line; do
+        tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
+        [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
+    done < <(scutil --nc list 2>/dev/null | grep -E "<(VPN|PPP)")
+}
+
+load_vpn_tunnels
 if [[ ${#VPN_TUNNELS[@]} -gt 0 ]]; then
     ok "VPN profiles: ${VPN_TUNNELS[*]}"
     HAS_VPN=true
@@ -125,11 +131,7 @@ else
         echo ""
         info "Add a VPN profile, then press Enter to re-check."
         read -rp ""
-        VPN_TUNNELS=()
-        while IFS= read -r line; do
-            tunnel=$(echo "$line" | grep -o '"[^"]*"' | tail -1 | tr -d '"')
-            [[ -n "$tunnel" ]] && VPN_TUNNELS+=("$tunnel")
-        done < <(scutil --nc list 2>/dev/null | grep "VPN")
+        load_vpn_tunnels
         if [[ ${#VPN_TUNNELS[@]} -gt 0 ]]; then
             ok "VPN profiles: ${VPN_TUNNELS[*]}"
             HAS_VPN=true
