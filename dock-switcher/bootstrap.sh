@@ -258,6 +258,11 @@ for loc in "${LOCATIONS[@]}"; do
 
     DEFAULT_STR=$(IFS=','; echo "${DEFAULTS[*]}")
 
+    stty -echo </dev/tty 2>/dev/null
+    sleep 0.15
+    while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
+    stty echo </dev/tty 2>/dev/null
+
     SELECTED=$(choose_many "Features (↑↓ navigate, space select, enter confirm):" \
         --selected="$DEFAULT_STR" \
         "${FEATURE_LIST[@]}")
