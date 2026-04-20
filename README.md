@@ -6,11 +6,15 @@ A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi
 
 | Addon | Description |
 |-------|-------------|
-| [dock-switcher](./dock-switcher) | Switch dock layouts, firewall, stealth mode, AirDrop, and VPN per location |
+| [dock-switcher](./dock-switcher) | Switch firewall, stealth mode, AirDrop, VPN, and more per location |
 
-## Usage
+## Quick Install
 
-Each addon is self-contained with its own `bootstrap.sh`:
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)"
+```
+
+Or clone and run manually:
 
 ```bash
 git clone https://github.com/ctrlcmdshft/wifi-loc-control-addons.git
