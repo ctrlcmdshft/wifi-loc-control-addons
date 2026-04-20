@@ -43,7 +43,7 @@ pick() {
         echo -e "  ${DIM}$((i+1)))${RESET} ${options[$i]}"
     done
     while true; do
-        echo -ne "${DIM}Enter number (1-${#options[@]}):${RESET} "
+        echo -ne "${DIM}Choose (1–${#options[@]}):${RESET} "
         read -r choice
         choice="${choice//[^0-9]/}"
         if [[ -n "$choice" ]] && (( choice >= 1 && choice <= ${#options[@]} )); then
