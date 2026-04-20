@@ -12,17 +12,19 @@ A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi
 
 ## Quick Install
 
+**loc-guard** (install this first):
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)"
 ```
 
-Or clone and run manually:
-
+**loc-wallpaper:**
 ```bash
-git clone https://github.com/ctrlcmdshft/wifi-loc-control-addons.git
-cd wifi-loc-control-addons/<addon-name>
-chmod +x bootstrap.sh
-./bootstrap.sh
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)" -- loc-wallpaper
+```
+
+**loc-audio:**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)" -- loc-audio
 ```
 
 ## Requirements

@@ -16,6 +16,12 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 ## Installation
 
+**One-line install:**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)" -- loc-audio
+```
+
+**Or clone and run manually:**
 ```bash
 git clone https://github.com/ctrlcmdshft/wifi-loc-control-addons.git
 cd wifi-loc-control-addons/loc-audio

@@ -3,6 +3,7 @@ set -e
 
 REPO="https://github.com/ctrlcmdshft/wifi-loc-control-addons.git"
 DEST="$HOME/wifi-loc-control-addons"
+ADDON="${1:-loc-guard}"
 
 if [[ -d "$DEST/.git" ]]; then
     echo "Updating existing install..."
@@ -12,4 +13,4 @@ else
     git clone --quiet "$REPO" "$DEST"
 fi
 
-exec "$DEST/loc-guard/bootstrap.sh" "$@"
+exec "$DEST/$ADDON/bootstrap.sh"
