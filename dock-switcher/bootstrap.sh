@@ -287,13 +287,13 @@ for loc in "${LOCATIONS[@]}"; do
         LOC_TUNNEL[$loc]=$(choose_one "Select VPN tunnel for $loc:" "${VPN_TUNNELS[@]}")
     fi
 
-    # Kill apps — silence echo while draining gum's leftover terminal query bytes
+    # Kill apps — drain gum's leftover terminal query bytes before prompting
     echo ""
-    $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
     stty -echo </dev/tty 2>/dev/null
     sleep 0.15
     while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
     stty echo </dev/tty 2>/dev/null
+    $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
     IFS= read -r KILLAPPS </dev/tty
     LOC_KILLAPPS[$loc]="$KILLAPPS"
 done
