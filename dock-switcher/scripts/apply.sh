@@ -2,9 +2,8 @@
 exec 2>&1
 
 LOCATION="$1"
-SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SCRIPT_DIR/settings.conf"
-DOCKFLOW="/Applications/DockFlow.app/Contents/MacOS/DockFlowCLI"
 FIREWALL="/usr/libexec/ApplicationFirewall/socketfilterfw"
 
 source "$CONFIG"
@@ -13,11 +12,6 @@ source "$CONFIG"
 KEY=$(echo "$LOCATION" | tr '[:lower:]' '[:upper:]' | tr ' ' '_')
 
 val() { eval echo "\${${KEY}_${1}}"; }
-
-# ── DockFlow ──────────────────────────────────────────────────────────────────
-if [[ "$(val dockflow)" == "on" ]] && [[ -x "$DOCKFLOW" ]]; then
-    "$DOCKFLOW" apply --name "$(val dockflow_preset)"
-fi
 
 # ── Firewall ──────────────────────────────────────────────────────────────────
 if [[ "$(val firewall)" == "on" ]]; then

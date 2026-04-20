@@ -6,11 +6,10 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 | Feature | Description |
 |---------|-------------|
-| **Dock** | Switches DockFlow presets per location |
 | **Firewall** | Enables/disables macOS firewall |
 | **Stealth Mode** | Hides your Mac from network probes |
 | **AirDrop** | Enables/disables AirDrop |
-| **VPN** | Connects/disconnects a WireGuard VPN profile |
+| **VPN** | Connects/disconnects a VPN profile |
 | **Kill Apps** | Quits specified apps on location change |
 | **Notifications** | Shows a summary banner on each switch |
 
@@ -18,7 +17,6 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 - macOS 14+
 - [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) installed
-- [DockFlow](https://dockflow.app) — required for dock switching. Install the CLI tool from within DockFlow's settings.
 - Any VPN configured in **System Settings → VPN** _(optional — for VPN switching. Works with WireGuard, ProtonVPN, OpenVPN, L2TP, etc.)_
 - `terminal-notifier` — installed automatically by bootstrap
 
@@ -40,35 +38,31 @@ Then:
 All configuration lives in `~/.wifi-loc-control/settings.conf`. Toggle features on/off per location — no script editing required.
 
 ```bash
-# Change the VPN tunnel (must match name in System Settings → VPN)
-WIREGUARD_TUNNEL="YOUR-TUNNEL-NAME"
-
 # Per-location toggles
-HOME_dockflow=on
-HOME_dockflow_preset="Home"
 HOME_firewall=off
 HOME_stealth_mode=off
 HOME_airdrop=on
 HOME_wireguard=off
+HOME_wireguard_tunnel=""
 HOME_kill_apps=""
 HOME_notification=on
 ```
 
 ### Adding a new location
 
-1. Add your location's settings block to `settings.conf`:
+1. Add a location in **System Settings → Network → Locations** then re-run `bootstrap.sh` — it will detect the new location and generate everything automatically.
+
+2. Or add the settings block manually to `settings.conf` and create the location script:
 ```bash
-CAFE_dockflow=on
-CAFE_dockflow_preset="Minimal"
 CAFE_firewall=on
 CAFE_stealth_mode=on
 CAFE_airdrop=off
 CAFE_wireguard=on
+CAFE_wireguard_tunnel="MY-TUNNEL"
 CAFE_kill_apps=""
 CAFE_notification=on
 ```
 
-2. Create a location script in `~/.wifi-loc-control/`:
 ```bash
 cat > ~/.wifi-loc-control/Cafe << 'EOF'
 #!/usr/bin/env bash
