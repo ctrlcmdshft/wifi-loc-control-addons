@@ -315,9 +315,11 @@ for loc in "${LOCATIONS[@]}"; do
         fi
     fi
 
-    # Kill apps
+    # Kill apps — flush gum's leftover terminal query responses before reading
     echo ""
     $GUM style --foreground 212 "  Apps to quit on switch for $loc (comma-separated, or leave blank):" >/dev/tty
+    sleep 0.15
+    while IFS= read -r -t 0.05 -n 1 _d </dev/tty 2>/dev/null; do :; done
     IFS= read -r KILLAPPS </dev/tty
     LOC_KILLAPPS[$loc]="$KILLAPPS"
 done
