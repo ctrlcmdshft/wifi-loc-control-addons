@@ -312,12 +312,8 @@ for loc in "${LOCATIONS[@]}"; do
     done <<< "$SELECTED"
 
     if [[ "${LOC_VPN[$loc]}" == "on" ]]; then
-        if [[ ${#VPN_TUNNELS[@]} -eq 1 ]]; then
-            LOC_TUNNEL[$loc]="${VPN_TUNNELS[0]}"
-        else
-            echo ""
-            LOC_TUNNEL[$loc]=$(choose_one "Select VPN tunnel for $loc:" "${VPN_TUNNELS[@]}")
-        fi
+        echo ""
+        LOC_TUNNEL[$loc]=$(choose_one "Select VPN tunnel for $loc:" "${VPN_TUNNELS[@]}")
     fi
 
     # Kill apps — silence echo while draining gum's leftover terminal query bytes
