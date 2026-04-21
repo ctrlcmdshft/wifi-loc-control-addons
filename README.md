@@ -9,6 +9,7 @@ Addons for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) â€
 | [loc-guard](./loc-guard) | Firewall, stealth mode, AirDrop, VPN |
 | [loc-wallpaper](./loc-wallpaper) | Desktop wallpaper |
 | [loc-audio](./loc-audio) | Audio output device and volume |
+| [loc-display](./loc-display) | Screen brightness and Night Shift |
 
 Install any addon on its own â€” no specific order required.
 
@@ -23,6 +24,9 @@ curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons
 
 # loc-audio
 curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh | bash -s loc-audio
+
+# loc-display
+curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh | bash -s loc-display
 ```
 
 ## Requirements
