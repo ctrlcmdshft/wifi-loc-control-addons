@@ -13,6 +13,14 @@ Addons for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) â€
 
 Install any addon on its own â€” no specific order required.
 
+## Manage
+
+Enable or disable installed addons without uninstalling them:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh | bash -s manage
+```
+
 ## Install
 
 ```bash

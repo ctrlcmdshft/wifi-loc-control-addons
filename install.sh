@@ -13,4 +13,8 @@ else
     git clone --quiet "$REPO" "$DEST"
 fi
 
+if [[ "$ADDON" == "manage" ]]; then
+    exec "$DEST/manage.sh"
+fi
+
 exec "$DEST/$ADDON/bootstrap.sh"
