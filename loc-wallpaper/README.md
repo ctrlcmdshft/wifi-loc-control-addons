@@ -6,7 +6,7 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 - macOS 14+
 - [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) installed
-- Addons are independent — the hook dispatcher is installed automatically if needed
+- Install in any order — each addon sets up what it needs automatically
 
 ## Installation
 
