@@ -1,29 +1,27 @@
 # wifi-loc-control Addons
 
-A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) — each one extends what happens when your Mac switches network locations.
+Addons for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) — automatically apply per-location settings when your Mac switches networks.
 
 ## Addons
 
-| Addon | Description |
+| Addon | What it does |
 |-------|-------------|
-| [loc-guard](./loc-guard) | Switch firewall, stealth mode, AirDrop, VPN, and more per location |
-| [loc-wallpaper](./loc-wallpaper) | Switch desktop wallpaper per location |
-| [loc-audio](./loc-audio) | Switch audio output device and volume per location |
+| [loc-guard](./loc-guard) | Firewall, stealth mode, AirDrop, VPN |
+| [loc-wallpaper](./loc-wallpaper) | Desktop wallpaper |
+| [loc-audio](./loc-audio) | Audio output device and volume |
 
-## Quick Install
+Install any addon on its own — no specific order required.
 
-**loc-guard:**
+## Install
+
 ```bash
+# loc-guard
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)"
-```
 
-**loc-wallpaper:**
-```bash
+# loc-wallpaper
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)" -- loc-wallpaper
-```
 
-**loc-audio:**
-```bash
+# loc-audio
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)" -- loc-audio
 ```
 
