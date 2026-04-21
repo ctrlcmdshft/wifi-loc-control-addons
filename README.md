@@ -12,7 +12,7 @@ A collection of addons for [wifi-loc-control](https://github.com/vborodulin/wifi
 
 ## Quick Install
 
-**loc-guard** (install this first):
+**loc-guard:**
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)"
 ```
