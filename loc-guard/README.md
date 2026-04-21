@@ -24,7 +24,7 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 **One-line install:**
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh)"
+curl -fsSL https://raw.githubusercontent.com/ctrlcmdshft/wifi-loc-control-addons/main/install.sh | bash
 ```
 
 **Or clone and run manually:**
