@@ -11,7 +11,7 @@ An addon for [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) 
 
 - macOS 14+
 - [wifi-loc-control](https://github.com/vborodulin/wifi-loc-control) installed
-- [loc-guard](../loc-guard) installed first (provides the hook dispatcher)
+- Addons are independent — the hook dispatcher is installed automatically if needed
 - [SwitchAudioSource](https://github.com/deweller/switchaudio-osx) — installed automatically if needed
 
 ## Installation

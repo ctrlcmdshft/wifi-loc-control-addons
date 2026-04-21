@@ -27,9 +27,10 @@ $GUM style \
     "Loc Wallpaper — Setup"
 echo ""
 
-# ── Check loc-guard dispatcher is installed ───────────────────────────────────
-if [[ ! -d "$INSTALL_DIR/hooks" ]]; then
-    err "loc-guard hooks not found — run loc-guard/bootstrap.sh first"
+# ── Ensure hook dispatcher is installed ──────────────────────────────────────
+source "$ADDON_DIR/../lib/setup-dispatcher.sh"
+if ! setup_dispatcher; then
+    err "Could not set up hook dispatcher"
     exit 1
 fi
 
@@ -40,7 +41,7 @@ for d in "$INSTALL_DIR/hooks"/*/; do
 done
 
 if [[ ${#LOCATIONS[@]} -eq 0 ]]; then
-    err "No locations found — run loc-guard/bootstrap.sh first"
+    err "No locations found"
     exit 1
 fi
 
