@@ -79,11 +79,11 @@ Wi-Fi changes
 
 ## VPN Notes
 
-VPN switching works with any VPN configured in **System Settings → VPN** — WireGuard, IKEv2, L2TP, etc.
+Works with any VPN configured in **System Settings → VPN** — WireGuard, IKEv2, L2TP, etc.
 
-VPN switching uses a small background app (`VPNHelper.app`) built from source during setup. It runs at login with no dock icon or menu bar. It watches for changes to the trigger file written by `apply.sh` and calls `scutil --nc start/stop`, which has the proper macOS session access needed to control Network Extensions.
+The installer builds a small helper app (`VPNHelper.app`) and registers it as a LaunchAgent so it starts automatically and stays running in the background. It has no dock icon or menu bar entry.
 
-The installer registers all detected VPN services across every network location so switching works regardless of which location is active.
+When your location switches, `apply.sh` writes a trigger file. `VPNHelper` watches that file and calls `scutil --nc start/stop` to connect or disconnect your VPN. Direct `scutil` calls from shell scripts lack the session context needed to control Network Extensions — the helper exists to bridge that gap.
 
 ## Logs
 
